@@ -1,0 +1,1 @@
+General GitHub related stuff, such as shared workflows and actions.
