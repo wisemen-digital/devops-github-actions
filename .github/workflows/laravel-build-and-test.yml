@@ -1,0 +1,97 @@
+name: Build & Test Laravel
+
+#
+# Build a Laravel application, and then test it.
+# Note: will create an artifact called 'app-build'.
+#
+
+on:
+  workflow_call:
+    inputs:
+      php-version:
+        description: PHP Version (such as 8.2)
+        default: '8.2'
+        required: true
+        type: string
+
+jobs:
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    container: appwisebe/laravel-docker:${{ inputs.php-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      # Dependencies
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+      # Optimize
+      - name: Optimize composer autoloader
+        run: composer dump-autoload --optimize --classmap-authoritative
+      - name: Cache laravel events
+        run: php artisan event:cache
+      - name: Cache laravel routes
+        run: php artisan route:cache
+      - name: Cache laravel views
+        run: php artisan view:cache
+      # Archive
+      - name: Archive result
+        run: tar -czf dist.tar.gz --exclude=.git* * .??*
+      - name: Store archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-build
+          path: dist.tar.gz
+  test:
+    name: Test Application
+    needs: build
+    runs-on: ubuntu-latest
+    container: appwisebe/laravel-docker:${{ inputs.php-version }}
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_DATABASE: test_database
+      DB_USERNAME: test_user
+      DB_PASSWORD: test_password
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: ${{ env.DB_DATABASE }}
+          MYSQL_USER: ${{ env.DB_USERNAME }}
+          MYSQL_PASSWORD: ${{ env.DB_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: test_root_password
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Download archive
+        uses: actions/download-artifact@v3
+        with:
+          name: app-build
+      - name: Extract archive
+        run: tar xzf dist.tar.gz && rm dist.tar.gz
+      - name: Prepare Laravel application
+        run: |
+          php -r "file_exists('.env') || copy('.env.example', '.env');"
+          sed -i '/^DB_/d' .env
+          php artisan key:generate
+          php artisan passport:keys
+          php artisan config:cache
+          php artisan migrate --seed
+      - name: Run tests
+        run: vendor/bin/pest --log-junit="test-reports/junit.xml"
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: test-reports/junit.xml
