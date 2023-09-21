@@ -1,0 +1,36 @@
+---
+name: Fetch variable from environment vars
+
+#
+# Quickly fetch the value of a `vars`, correctly dealing with environments.
+#
+# Useful when dealing with `workflow_call` / `uses` jobs, which do not support
+# providing an environment.
+#
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      environment:
+        description: Environment to fetch from
+        type: string
+        required: true
+      variable:
+        description: Name of variable to fetch
+        type: string
+        required: false
+    outputs:
+      value:
+        description: Fetched value
+        value: ${{ jobs.fetch.outputs.value }}
+
+jobs:
+  fetch:
+    name: Fetch ${{ inputs.variable }} from environment
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    outputs:
+      value: ${{ steps.data.outputs.value }}
+    steps:
+      - id: data
+        run: echo "value=${{ vars[inputs.variable] }}" >> "$GITHUB_OUTPUT"
