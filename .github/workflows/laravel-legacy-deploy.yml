@@ -18,6 +18,10 @@ on:
         description: Target environment
         required: true
         type: string
+      rsync-args:
+        description: Extra arguments for the `rsync` statement
+        required: false
+        type: string
     secrets:
       SSH_KEY:
         description: Private SSH key
@@ -62,6 +66,7 @@ jobs:
           --exclude=storage/framework/sessions
           --exclude=storage/framework/cache
           --exclude='storage/oauth-*.key'
+          ${{ inputs.rsync-args }}
       - name: Tweak folders
         run: |
           ssh ${{ vars.DEPLOY_URL }} << EOF
