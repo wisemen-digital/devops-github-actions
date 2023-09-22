@@ -77,8 +77,15 @@ jobs:
         run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan migrate --force"
       - name: Clear permissions cache
         run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan permission:cache-reset"
-      - name: Restart queues
-        run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan queue:restart"
+      - name: Restart workers
+        run: |
+          ssh ${{ vars.DEPLOY_URL }} << EOF
+            cd www/htdocs
+            php artisan queue:restart
+            if php artisan list | grep -q 'websockets:restart'; then
+              php artisan websockets:restart
+            fi
+          EOF
       # Post-deploy: turn server back on
       - name: Disable maintenance mode
         run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan up"
