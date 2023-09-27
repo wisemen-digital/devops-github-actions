@@ -52,19 +52,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Pre-deploy: turn server off
       - name: Enable maintenance mode
-        run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan down"
+        run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan down || true"
       # Deploy
       - name: Upload files
         run: >-
-          rsync -crltDz . ${{ vars.DEPLOY_URL }}:www/htdocs --delete-delay
-          --exclude=.env
+          rsync -vcrltDz . ${{ vars.DEPLOY_URL }}:www/htdocs --delete-delay
+          --exclude='.env*'
           --exclude=.git
+          --exclude=composer.lock
+          --exclude=package.json
+          --exclude=LICENSE
+          --exclude='*.md'
           --exclude=tests
-          --exclude='public/*'
-          --include=public/index.php
+          --exclude=phpunit.xml
           --exclude=storage/logs
-          --exclude=storage/framework/sessions
           --exclude=storage/framework/cache
+          --exclude=storage/framework/down
+          --exclude=storage/framework/maintenance.php
+          --exclude=storage/framework/sessions
           --exclude='storage/oauth-*.key'
           ${{ inputs.rsync-args }}
       - name: Tweak folders
