@@ -1,0 +1,103 @@
+name: Build & Test Web
+
+#
+# Build, test & lint a Vue application
+#
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node Version (such as 20.5)
+        default: 'lts/*'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # First lint & typecheck
+  lint:
+    name: Lint Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
+      - name: Lint
+        run: pnpm lint
+  typecheck:
+    name: Typecheck Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
+      - name: Typecheck
+        run: pnpm type-check
+
+  # Then build & test
+  build:
+    name: Build Application
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run build
+        run: pnpm build
+  test:
+    name: Test Application
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run tests
+        run: |
+          if test -f '.env.test'; then cp -f '.env.test' '.env'; fi
+          pnpm vitest --run --reporter=junit --outputFile="test-reports/junit.xml"
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v4
+        if: always() # always run even if the previous step fails
+        with:
+          report_paths: test-reports/junit.xml
