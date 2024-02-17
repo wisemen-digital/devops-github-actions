@@ -21,12 +21,12 @@ jobs:
     container: appwisebe/laravel-docker:${{ inputs.php-version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       # Dependencies
       - name: Get Composer Cache Directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -46,7 +46,7 @@ jobs:
       - name: Archive result
         run: tar -czf dist.tar.gz --exclude=.git* * .??*
       - name: Store archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-build
           path: dist.tar.gz
@@ -76,7 +76,7 @@ jobs:
           --health-retries 5
     steps:
       - name: Download archive
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: app-build
       - name: Extract archive
