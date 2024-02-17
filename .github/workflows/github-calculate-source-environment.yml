@@ -5,7 +5,7 @@ name: Calculate source environment
 # Calculate the "source" environment for a given target one. The default
 # mapping can be overriden, and you can always provide your own "source".
 # 
-# Example: the "source" for the "staging" environment is "test".
+# Example: the "source" for the "staging" environment is "qa".
 #
 
 on:  # yamllint disable-line rule:truthy
@@ -22,6 +22,7 @@ on:  # yamllint disable-line rule:truthy
       map:
         description: Environment map (JSON, fallback to default map)
         type: string
+        required: false
     outputs:
       source:
         description: Calculated source
@@ -31,7 +32,7 @@ on:  # yamllint disable-line rule:truthy
         value: ${{ jobs.calculate.outputs.target }}
 
 env:
-  default-map: '{"development": "development", "test": "development", "staging": "test", "production": "staging"}'
+  default-map: '{"development": "development", "qa": "development", "staging": "qa", "production": "staging"}'
 
 jobs:
   calculate:
