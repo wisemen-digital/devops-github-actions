@@ -1,0 +1,75 @@
+---
+name: Build & deploy to environment (Scaleway)
+
+#
+# Build the docker image, and deploy it to the given environment.
+#
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      environment:
+        description: Target environment to deploy to
+        type: string
+        required: true
+      # Scaleway information
+      scaleway-container-registry:
+        description: Container registry endpoint
+        required: true
+        type: string
+      scaleway-organization-id:
+        description: Scaleway organization ID
+        required: true
+        type: string
+      scaleway-project-id:
+        description: Scaleway project ID
+        required: true
+        type: string
+      scaleway-region:
+        description: Target deployment region (such as nl-ams)
+        required: true
+        type: string
+      scaleway-cluster-id:
+        description: Target cluster ID
+        required: true
+        type: string
+      # Cluster info
+      cluster-deployments:
+        description: List of deployments to rollout
+        required: true
+        type: string
+    secrets:
+      SCALEWAY_ACCESS_KEY:
+        description: Scaleway API key ID
+        required: true
+      SCALEWAY_SECRET_KEY:
+        description: Scaleway API key secret
+        required: true
+
+jobs:
+  fetch-namespace:
+    uses: ./.github/workflows/github-fetch-environment-variable.yml
+    with:
+      environment: ${{ inputs.environment }}
+      variable: K8S_NAMESPACE
+
+  build-and-push:
+    uses: ./.github/workflows/docker-build-and-push.yml
+    with:
+      container-registry: ${{ inputs.scaleway-container-registry }}
+      tag: ${{ github.ref_name == 'main' && 'development' || github.ref_name }}
+    secrets:
+      CONTAINER_REGISTRY_USERNAME: nologin
+      CONTAINER_REGISTRY_PASSWORD: ${{ secrets.SCALEWAY_SECRET_KEY }}
+
+  rollout:
+    needs: [fetch-namespace, build-and-push]
+    uses: ./.github/workflows/docker-rollout-scaleway.yml
+    with:
+      organization-id: ${{ inputs.scaleway-organization-id }}
+      project-id: ${{ inputs.scaleway-project-id }}
+      region: ${{ inputs.scaleway-region }}
+      cluster-id: ${{ inputs.scaleway-cluster-id }}
+      cluster-deployments: ${{ inputs.cluster-deployments }}
+      cluster-namespace: ${{ needs.fetch-namespace.outputs.value }}
+    secrets: inherit
