@@ -1,0 +1,118 @@
+---
+name: Build & Test Web
+
+#
+# Build, test & lint a Vue application
+#
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node Version (such as 20.5)
+        default: 'lts/*'
+        type: string
+      test-timeout:
+        description: Time (in minutes) after wich the test job will timeout
+        default: 5
+        type: number
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # First lint & build
+  lint:
+    name: Lint Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run build
+        run: pnpm build
+      # Archive
+      - name: Store archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: |
+            dist
+            _build
+
+  # Then test
+  test:
+    name: Test Application
+    needs: [lint, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.test-timeout }}
+    services:
+      postgres:
+        image: postgis/postgis
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: 'test_db'
+          POSTGRES_USER: 'postgres'
+          POSTGRES_PASSWORD: 'password'
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Download archive
+        uses: actions/download-artifact@v4
+        with:
+          name: app-build
+      - name: Run tests
+        run: |
+          if test -f '.env.test'; then cp -f '.env.test' '.env'; fi
+          node --test -r dotenv/config \
+            --test-reporter=junit \
+            --test-reporter-destination="test-report-junit.xml"
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v4
+        if: always()  # always run even if the previous step fails
+        with:
+          report_paths: test-report-junit.xml
