@@ -53,6 +53,7 @@ jobs:
           echo "container_registry=${{ inputs.container-registry || 'docker.io' }}" >> "$GITHUB_ENV"
           echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
           echo "tag=`echo '${{ inputs.tag || github.ref_name }}' | sed 's/\//_/g'`" >> "$GITHUB_ENV"
+          echo "timestamp=`date +'%Y-%m-%dT%H:%M:%S'`" >> "$GITHUB_ENV"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Login to GitHub registry
@@ -79,3 +80,7 @@ jobs:
           tags: ${{ env.container_registry }}/${{ env.image }}:${{ env.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_COMMIT=${{ github.sha }}
+            BUILD_NUMBER=${{ github.run_number }}
+            BUILD_TIMESTAMP=${{ env.timestamp }}
