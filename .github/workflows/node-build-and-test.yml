@@ -89,6 +89,18 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      typesense:
+        image: typesense/typesense:0.25.2
+        ports:
+          - 8108:8108
+        env:
+          TYPESENSE_DATA_DIR: '/home'
+          TYPESENSE_API_KEY: 'api_key'
+        options: >-
+          --health-cmd "apt-get update && apt-get install -y curl && curl http://127.0.0.1:8108/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
