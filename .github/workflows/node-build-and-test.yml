@@ -16,6 +16,18 @@ on:  # yamllint disable-line rule:truthy
         description: Time (in minutes) after wich the test job will timeout
         default: 5
         type: number
+      test-postgres-image:
+        description: Image to use for PostgreSQL test DB (defaults to normal image)
+        default: 'postgis/postgis'
+        type: string
+      test-typesense-image:
+        description: Image to use for Typesense test DB (defaults to normal image)
+        default: 'typesense/typesense:0.25.2'
+        type: string
+      test-typesense-enabled:
+        description: Enable typesense test service (defaults to false)
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -67,16 +79,35 @@ jobs:
           path: |
             dist
             _build
+  prep-test:
+    name: Prepare Test Services
+    runs-on: ubuntu-latest
+    outputs:
+      typesense-image: ${{ steps.data.outputs.typesense-image }}
+      typesense-health: ${{ steps.data.outputs.typesense-health }}
+    steps:
+      - name: Prepare Test Services
+        id: data
+        run: |
+          if [ "${{ inputs.test-typesense-enabled }}" == "true" ]; then
+            echo "typesense-image=${{ inputs.test-typesense-image }}" >> "$GITHUB_OUTPUT"
+            echo "typesense-health=apt-get update && \
+              apt-get install -y curl && \
+              curl http://127.0.0.1:8108/health" >> "$GITHUB_OUTPUT"
+          else
+            echo "typesense-image=nginx:stable-alpine-slim" >> "$GITHUB_OUTPUT"
+            echo "typesense-health=exit 0" >> "$GITHUB_OUTPUT"
+          fi
 
   # Then test
   test:
     name: Test Application
-    needs: [lint, build]
+    needs: [lint, build, prep-test]
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
     services:
       postgres:
-        image: postgis/postgis
+        image: ${{ inputs.test-postgres-image }}
         ports:
           - 5432:5432
         env:
@@ -90,14 +121,14 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       typesense:
-        image: typesense/typesense:0.25.2
+        image: ${{ needs.prep-test.outputs.typesense-image }}
         ports:
           - 8108:8108
         env:
           TYPESENSE_DATA_DIR: '/home'
           TYPESENSE_API_KEY: 'api_key'
         options: >-
-          --health-cmd "apt-get update && apt-get install -y curl && curl http://127.0.0.1:8108/health"
+          --health-cmd "${{ needs.prep-test.outputs.typesense-health }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
