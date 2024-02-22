@@ -6,7 +6,9 @@ This repository contains a bunch of workflows, which can be reused accross our r
 
 | Workflow | Description |
 | -------- | ----------- |
+| [workflow-build-and-deploy-digitalocean.yml](Docs/workflow-build-and-deploy-digitalocean.md) | Build & deploy docker image to given environment (on DigitalOcean) |
 | [workflow-build-and-deploy-scaleway.yml](Docs/workflow-build-and-deploy-scaleway.md) | Build & deploy docker image to given environment (on Scaleway) |
+| [workflow-promote-to-environment-digitalocean.yml](Docs/workflow-promote-to-environment-digitalocean.md) | Promote image to given environment (on DigitalOcean) |
 | [workflow-promote-to-environment-scaleway.yml](Docs/workflow-promote-to-environment-scaleway.md) | Promote image to given environment (on Scaleway) |
 
 ## Verification Workflows

@@ -1,0 +1,44 @@
+---
+name: Rollout to DigitalOcean
+
+#
+# Trigger a rollout restart of all given deployments.
+#
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      cluster-name:
+        description: Target cluster name
+        required: true
+        type: string
+      cluster-deployments:
+        description: List of deployments to rollout
+        required: true
+        type: string
+      cluster-namespace:
+        description: Cluster namespace to rollout in
+        required: true
+        type: string
+    secrets:
+      DIGITALOCEAN_API_TOKEN:
+        description: DigitalOcean API token
+        required: true
+
+jobs:
+  rollout:
+    name: Rollout kubernetes namespace ${{ inputs.cluster-namespace }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl tool
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+      - name: Save DigitalOcean kubeconfig
+        run: doctl k8s cluster kubeconfig save ${{ inputs.cluster-name }}
+      - name: Restart deployments
+        run: |
+          for deployment in ${{ inputs.cluster-deployments }}; do
+            kubectl rollout restart deployment $deployment \
+              --namespace=${{ inputs.cluster-namespace }}
+          done

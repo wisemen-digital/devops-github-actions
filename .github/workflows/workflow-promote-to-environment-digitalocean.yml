@@ -1,0 +1,77 @@
+---
+name: Promote to environment (DigitalOcean)
+
+#
+# Calculate previous environment, re-tag the image and roll it out.
+#
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      environment-source:
+        description: Source environment to deploy FROM (defaults to previous environment)
+        type: string
+        required: false
+      environment-target:
+        description: Target environment to deploy TO
+        type: string
+        required: true
+      # DigitalOcean information
+      digitalocean-container-registry:
+        description: Container registry endpoint
+        required: true
+        type: string
+      digitalocean-cluster-id:
+        description: Target cluster ID
+        required: true
+        type: string
+      # Cluster info
+      cluster-deployments:
+        description: List of deployments to rollout
+        required: true
+        type: string
+      # Extra options, probably not needed
+      environment-map:
+        description: Environment map (JSON, fallback to default map)
+        type: string
+        required: false
+    secrets:
+      DIGITALOCEAN_API_USER:
+        description: DigitalOcean user email
+        required: true
+      DIGITALOCEAN_API_TOKEN:
+        description: DigitalOcean API token
+        required: true
+
+jobs:
+  fetch-namespace:
+    uses: ./.github/workflows/github-fetch-environment-variable.yml
+    with:
+      environment: ${{ inputs.environment-target }}
+      variable: K8S_NAMESPACE
+
+  calculate-source:
+    uses: ./.github/workflows/github-calculate-source-environment.yml
+    with:
+      target: ${{ inputs.environment-target }}
+      source: ${{ inputs.environment-source }}
+
+  docker-add-tag:
+    needs: calculate-source
+    uses: ./.github/workflows/docker-add-tag.yml
+    with:
+      container-registry: ${{ inputs.digitalocean-container-registry }}
+      source-tag: ${{ needs.calculate-source.outputs.source }}
+      target-tag: ${{ needs.calculate-source.outputs.target }}
+    secrets:
+      CONTAINER_REGISTRY_USERNAME: ${{ secrets.DIGITALOCEAN_API_USER }}
+      CONTAINER_REGISTRY_PASSWORD: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+
+  rollout:
+    needs: [fetch-namespace, docker-add-tag]
+    uses: ./.github/workflows/docker-rollout-digitalocean.yml
+    with:
+      cluster-name: ${{ inputs.digitalocean-cluster-id }}
+      cluster-deployments: ${{ inputs.cluster-deployments }}
+      cluster-namespace: ${{ needs.fetch-namespace.outputs.value }}
+    secrets: inherit
