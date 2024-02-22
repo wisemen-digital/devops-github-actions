@@ -3,6 +3,7 @@ name: Build & Test Web
 
 #
 # Build, test & lint a Vue application
+# Note: will create an artifact called 'app-build'.
 #
 
 on:  # yamllint disable-line rule:truthy

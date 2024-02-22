@@ -2,11 +2,7 @@
 name: Promote to environment (Scaleway)
 
 #
-# Promote a docker image to the given environment.
-#
-# Essentially calculates the "previous" environment, for example "development"
-# comes before "QA". Then it'll re-tag the image, and finally it'll roll out
-# the image in the cluster.
+# Calculate previous environment, re-tag the image and roll it out.
 #
 
 on:  # yamllint disable-line rule:truthy
