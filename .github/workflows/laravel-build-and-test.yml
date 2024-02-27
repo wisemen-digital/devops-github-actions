@@ -20,6 +20,18 @@ on:  # yamllint disable-line rule:truthy
         type: string
 
 jobs:
+  lint:
+    name: Lint Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Lint
+        uses: aglipanci/laravel-pint-action@latest
+        with:
+          testMode: true
+          useComposer: true
   build:
     name: Build Application
     runs-on: ubuntu-latest
