@@ -21,6 +21,14 @@ on:  # yamllint disable-line rule:truthy
         description: Image to use for PostgreSQL test DB (defaults to normal image)
         default: 'postgis/postgis'
         type: string
+      test-redis-image:
+        description: Image to use for Redis test store (defaults to normal image)
+        default: 'redis:alpine'
+        type: string
+      test-redis-enabled:
+        description: Enable redis test service (defaults to false)
+        default: false
+        type: boolean
       test-typesense-image:
         description: Image to use for Typesense test DB (defaults to normal image)
         default: 'typesense/typesense:0.25.2'
@@ -84,12 +92,18 @@ jobs:
     name: Prepare Test Services
     runs-on: ubuntu-latest
     outputs:
+      redis-image: ${{ steps.data.outputs.redis-image }}
       typesense-image: ${{ steps.data.outputs.typesense-image }}
       typesense-health: ${{ steps.data.outputs.typesense-health }}
     steps:
       - name: Prepare Test Services
         id: data
         run: |
+          if [ "${{ inputs.test-redis-enabled }}" == "true" ]; then
+            echo "redis-image=${{ inputs.test-redis-image }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "redis-image=nginx:stable-alpine-slim" >> "$GITHUB_OUTPUT"
+          fi
           if [ "${{ inputs.test-typesense-enabled }}" == "true" ]; then
             echo "typesense-image=${{ inputs.test-typesense-image }}" >> "$GITHUB_OUTPUT"
             echo "typesense-health=apt-get update && \
@@ -121,6 +135,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: ${{ needs.prep-test.outputs.redis-image }}
+        ports:
+          - 6379:6379
       typesense:
         image: ${{ needs.prep-test.outputs.typesense-image }}
         ports:
