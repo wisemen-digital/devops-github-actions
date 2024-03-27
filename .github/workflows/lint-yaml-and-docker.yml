@@ -1,0 +1,124 @@
+---
+name: Lint YAML & Dockerfile
+
+#
+# Validate all yaml files in a given path
+#
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      yaml-paths:
+        description: List of paths to verify (defaults to current directory)
+        default: '.github'
+        required: false
+        type: string
+      enable-docker-linting:
+        description: Enable dockerfile linting
+        default: true
+        required: false
+        type: boolean
+      docker-lint-recursive:
+        description: Lint dockerfiles in ALL folders
+        default: false
+        required: false
+        type: boolean
+
+env:
+  # Default YAML linter config
+  default-yaml-lint-config: |
+    ---
+    ignore: |
+    rules:
+      braces:
+        level: error
+        min-spaces-inside: 0
+        max-spaces-inside: 1
+        min-spaces-inside-empty: -1
+        max-spaces-inside-empty: -1
+      brackets:
+        level: error
+        min-spaces-inside: 0
+        max-spaces-inside: 0
+        min-spaces-inside-empty: -1
+        max-spaces-inside-empty: -1
+      colons:
+        level: error
+        max-spaces-before: 0
+        max-spaces-after: 1
+      commas:
+        level: error
+        max-spaces-before: 0
+        min-spaces-after: 1
+        max-spaces-after: 1
+      comments:
+        level: error
+        require-starting-space: true
+        min-spaces-from-content: 2
+      comments-indentation:
+        level: error
+      document-end:
+        level: error
+        present: false
+      document-start:
+        level: error
+        present: true
+      empty-lines:
+        level: error
+        max: 1
+        max-start: 0
+        max-end: 1
+      hyphens:
+        level: error
+        max-spaces-after: 1
+      indentation:
+        level: error
+        spaces: 2
+        indent-sequences: true
+        check-multi-line-strings: false
+      key-duplicates:
+        level: error
+      line-length:
+        level: warning
+        max: 100
+        allow-non-breakable-words: true
+        allow-non-breakable-inline-mappings: true
+      new-line-at-end-of-file:
+        level: error
+      new-lines:
+        level: error
+        type: unix
+      trailing-spaces:
+        level: error
+      truthy:
+        level: error
+
+jobs:
+  yaml-lint:
+    name: Lint YAML
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Apply config if needed
+        run: |
+          if [ ! -f ".yamllint" ]; then
+            echo "Applying default configuration…"
+            echo "${{ env.default-yaml-lint-config }}" > .yamllint
+          fi
+      - name: Run yamllint
+        run: yamllint ${{ inputs.yaml-paths }}
+
+  docker-lint:
+    name: Lint Dockerfile
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable-docker-linting }}
+    env:
+      HADOLINT_RECURSIVE: ${{ inputs.docker-lint-recursive }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: ${{ inputs.docker-lint-recursive }}
