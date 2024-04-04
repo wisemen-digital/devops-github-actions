@@ -1,0 +1,78 @@
+---
+name: Rollout deployments (Scaleway)
+
+#
+# Check what's changed (via filters, or provide your own list) and roll it out.
+#
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      # Scaleway information
+      scaleway-organization-id:
+        description: Scaleway organization ID
+        required: true
+        type: string
+      scaleway-project-id:
+        description: Scaleway project ID
+        required: true
+        type: string
+      scaleway-region:
+        description: Target deployment region (such as nl-ams)
+        required: true
+        type: string
+      scaleway-cluster-id:
+        description: Target cluster ID
+        required: true
+        type: string
+      # Cluster info
+      cluster-deployments:
+        description: List of deployments to roll out (folders), separated by commas
+        required: true
+        type: string
+    secrets:
+      SCALEWAY_ACCESS_KEY:
+        description: Scaleway API key ID
+        required: true
+      SCALEWAY_SECRET_KEY:
+        description: Scaleway API key secret
+        required: true
+
+jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.dispatch.outputs.changes || steps.filtered.outputs.changes }}
+    steps:
+      - name: Checkout
+        if: "${{ github.event.inputs.deployments == '' }}"
+        uses: actions/checkout@v4
+      - name: Generate Matrix
+        if: "${{ github.event.inputs.deployments == '' }}"
+        id: filtered
+        uses: dorny/paths-filter@v3
+        with:
+          filters: .github/rollout-filters.yaml
+      - name: Generate Matrix
+        if: "${{ github.event.inputs.deployments != '' }}"
+        id: dispatch
+        run: |
+          echo "changes=`echo '${{ inputs.deployments }}' | \
+            jq 'split(",")' -Rc`" >> "$GITHUB_OUTPUT"
+
+  rollout-to-k8s:
+    name: Rollout to k8s
+    needs: [generate-matrix]
+    uses: ./.github/workflows/k8s-rollout-scaleway.yml
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    with:
+      organization-id: ${{ inputs.scaleway-organization-id }}
+      project-id: ${{ inputs.scaleway-project-id }}
+      region: ${{ inputs.scaleway-region }}
+      cluster-id: ${{ inputs.scaleway-cluster-id }}
+      config-path: ${{ matrix.deployment }}
+    secrets: inherit

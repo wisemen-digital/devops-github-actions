@@ -1,0 +1,60 @@
+---
+name: Rollout deployments (DigitalOcean)
+
+#
+# Check what's changed (via filters, or provide your own list) and roll it out.
+#
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      # Scaleway information
+      digitalocean-cluster-id:
+        description: Target cluster ID
+        required: true
+        type: string
+      # Cluster info
+      cluster-deployments:
+        description: List of deployments to roll out (folders), separated by commas
+        required: true
+        type: string
+    secrets:
+      DIGITALOCEAN_API_TOKEN:
+        description: DigitalOcean API token
+        required: true
+
+jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.dispatch.outputs.changes || steps.filtered.outputs.changes }}
+    steps:
+      - name: Checkout
+        if: "${{ github.event.inputs.deployments == '' }}"
+        uses: actions/checkout@v4
+      - name: Generate Matrix
+        if: "${{ github.event.inputs.deployments == '' }}"
+        id: filtered
+        uses: dorny/paths-filter@v3
+        with:
+          filters: .github/rollout-filters.yaml
+      - name: Generate Matrix
+        if: "${{ github.event.inputs.deployments != '' }}"
+        id: dispatch
+        run: |
+          echo "changes=`echo '${{ inputs.deployments }}' | \
+            jq 'split(",")' -Rc`" >> "$GITHUB_OUTPUT"
+
+  rollout-to-k8s:
+    name: Rollout to k8s
+    needs: [generate-matrix]
+    uses: ./.github/workflows/k8s-rollout-digitalocean.yml
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    with:
+      cluster-name: ${{ inputs.digitalocean-cluster-id }}
+      config-path: ${{ matrix.deployment }}
+    secrets: inherit
