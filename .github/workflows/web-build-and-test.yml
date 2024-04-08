@@ -107,10 +107,15 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Run tests
         run: |
-          if test -f '.env.test'; then cp -f '.env.test' '.env'; fi
-          pnpm vitest --run --reporter=junit --outputFile="test-reports/junit.xml"
+          if test -f '.env.test'; then
+            cp -f '.env.test' '.env'
+          fi
+          if [ "$RUNNER_DEBUG" != '1' ]; then
+            TEST_REPORTER='--reporter=junit --outputFile="test-report-junit.xml"'
+          fi
+          pnpm vitest --run $TEST_REPORTER
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
         with:
-          report_paths: test-reports/junit.xml
+          report_paths: test-reports-junit.xml
