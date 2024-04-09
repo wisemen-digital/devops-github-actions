@@ -96,9 +96,10 @@ jobs:
             cp -f '.env.test' '.env'
           fi
           if [ "$RUNNER_DEBUG" != '1' ]; then
-            TEST_REPORTER='--reporter=junit --outputFile="test-report-junit.xml"'
+            TEST_REPORTER='--reporter=junit'
+            TEST_REPORTER_DESTINATION='--outputFile="test-report-junit.xml"'
           fi
-          pnpm vitest --run $TEST_REPORTER
+          pnpm vitest --run $TEST_REPORTER $TEST_REPORTER_DESTINATION
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails

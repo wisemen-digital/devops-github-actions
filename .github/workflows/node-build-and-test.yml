@@ -173,9 +173,10 @@ jobs:
             cp -f '.env.test' '.env'
           fi
           if [ "$RUNNER_DEBUG" != '1' ]; then
-            TEST_REPORTER='--test-reporter=junit --test-reporter-destination="test-report-junit.xml"'
+            TEST_REPORTER='--test-reporter=junit'
+            TEST_REPORTER_DESTINATION='--test-reporter-destination="test-report-junit.xml"'
           fi
-          node --test -r dotenv/config $TEST_REPORTER
+          node --test -r dotenv/config $TEST_REPORTER $TEST_REPORTER_DESTINATION
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
