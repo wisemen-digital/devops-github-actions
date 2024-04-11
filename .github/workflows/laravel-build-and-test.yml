@@ -110,11 +110,7 @@ jobs:
           php artisan config:cache
           php artisan migrate --seed
       - name: Run tests
-        run: |
-          if [ "$RUNNER_DEBUG" != '1' ]; then
-            TEST_REPORTER='--log-junit="test-reports-junit.xml"'
-          fi
-          vendor/bin/pest $TEST_REPORTER
+        run: vendor/bin/pest --log-junit="test-reports-junit.xml"
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
