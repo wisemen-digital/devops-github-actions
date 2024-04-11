@@ -119,3 +119,4 @@ jobs:
         if: always()  # always run even if the previous step fails
         with:
           report_paths: test-report-junit.xml
+          require_passed_tests: true
