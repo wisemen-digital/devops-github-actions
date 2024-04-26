@@ -1,13 +1,14 @@
+---
 name: Deploy Laravel (Legacy)
 
 #
 # Deploy the result of a given "build" run to a server.
-# 
+#
 # Note: requires a "run ID", which you can get from the URL of a "build" run.
 # Example: https://github.com/…/actions/runs/6250541299 -> 6250541299
 #
 
-on:
+on:  # yamllint disable-line rule:truthy
   workflow_call:
     inputs:
       workflow-run-id:
