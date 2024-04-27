@@ -102,8 +102,8 @@ jobs:
         run: tar xzf dist.tar.gz && rm dist.tar.gz
       - name: Prepare Laravel application
         run: |
-          cp .env.testing .env
-          sed -i '/^DB_/d' .env.testing
+          cp -f .env.testing .env
+          sed -i '/^DB_/d' .env
           php artisan key:generate
           php artisan passport:keys
           cp -f .env .env.testing
