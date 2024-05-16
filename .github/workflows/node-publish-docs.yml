@@ -1,0 +1,51 @@
+---
+name: Deploy Node documentation to GitHub Pages
+
+#
+# Deploy node documentation to github pages.
+#
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      dist-path:
+        description: Path to build output
+        default: 'packages/docs/.vitepress/dist/'
+        type: string
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build documentation
+        run: pnpm docs:build
+      - name: Store archive
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ inputs.dist-path }}
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
