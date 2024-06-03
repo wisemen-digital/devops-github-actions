@@ -10,7 +10,7 @@ on:  # yamllint disable-line rule:truthy
     inputs:
       dist-path:
         description: Path to build output
-        default: 'packages/docs/.vitepress/dist/'
+        default: 'docs/.vitepress/dist/'
         type: string
 
 jobs:
