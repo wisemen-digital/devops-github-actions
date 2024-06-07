@@ -3,7 +3,7 @@
 ## Description
 
 This workflow will either:
-- *By default:* Check which folders have changed (using the `.github/rollout-filters.yaml` file)
+- *By default:* Check which folders have changed (using the `.github/k8s-rollout-filters.yaml` file)
 - Use the provided `cluster-deployments` list (comma separated)
 
 Using either list, it will trigger a rollout to the specified cluster using the configuration stored in that folder.
