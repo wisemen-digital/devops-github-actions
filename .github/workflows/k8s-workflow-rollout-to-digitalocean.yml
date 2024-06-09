@@ -38,7 +38,7 @@ jobs:
         id: filtered
         uses: dorny/paths-filter@v3
         with:
-          filters: .github/rollout-filters.yaml
+          filters: .github/k8s-rollout-filters.yaml
       - name: Generate Matrix
         if: "${{ github.event.inputs.deployments != '' }}"
         id: dispatch
