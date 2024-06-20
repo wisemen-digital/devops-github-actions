@@ -64,15 +64,20 @@ jobs:
   rollout-to-k8s:
     name: Rollout to k8s
     needs: [generate-matrix]
-    uses: ./.github/workflows/k8s-rollout-scaleway.yml
     strategy:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
     if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
-    with:
-      organization-id: ${{ inputs.scaleway-organization-id }}
-      project-id: ${{ inputs.scaleway-project-id }}
-      region: ${{ inputs.scaleway-region }}
-      cluster-id: ${{ inputs.scaleway-cluster-id }}
-      config-path: ${{ matrix.deployment }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply Configuration
+        uses: wisemen-digital/devops-ga-k8s-apply@main
+        with:
+          vendor: scaleway
+          cluster-id: ${{ vars.K8S_CLUSTER_ID }}
+          config-path: ${{ matrix.deployment }}
+          scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+          scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
+          scaleway-region: ${{ vars.SCALEWAY_REGION }}
+          scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}

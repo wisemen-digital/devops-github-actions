@@ -49,12 +49,16 @@ jobs:
   rollout-to-k8s:
     name: Rollout to k8s
     needs: [generate-matrix]
-    uses: ./.github/workflows/k8s-rollout-digitalocean.yml
     strategy:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
     if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
-    with:
-      cluster-name: ${{ inputs.digitalocean-cluster-id }}
-      config-path: ${{ matrix.deployment }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply Configuration
+        uses: wisemen-digital/devops-ga-k8s-apply@main
+        with:
+          vendor: digitalocean
+          cluster-id: ${{ vars.K8S_CLUSTER_ID }}
+          config-path: ${{ matrix.deployment }}
+          digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}

@@ -36,7 +36,11 @@ on:  # yamllint disable-line rule:truthy
       # Cluster info
       cluster-deployments:
         description: List of deployments to rollout
-        required: true
+        required: false
+        type: string
+      cluster-labels:
+        description: List of labels to rollout
+        required: false
         type: string
     secrets:
       SCALEWAY_ACCESS_KEY:
@@ -63,13 +67,20 @@ jobs:
       CONTAINER_REGISTRY_PASSWORD: ${{ secrets.SCALEWAY_SECRET_KEY }}
 
   rollout:
+    name: Rollout to k8s
     needs: [fetch-namespace, build-and-push]
-    uses: ./.github/workflows/docker-rollout-scaleway.yml
-    with:
-      organization-id: ${{ inputs.scaleway-organization-id }}
-      project-id: ${{ inputs.scaleway-project-id }}
-      region: ${{ inputs.scaleway-region }}
-      cluster-id: ${{ inputs.scaleway-cluster-id }}
-      cluster-deployments: ${{ inputs.cluster-deployments }}
-      cluster-namespace: ${{ needs.fetch-namespace.outputs.value }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollout on cluster
+        uses: wisemen-digital/devops-ga-k8s-rollout@main
+        with:
+          vendor: scaleway
+          cluster-id: ${{ inputs.scaleway-cluster-id }}
+          rollout-deployments: ${{ inputs.cluster-deployments }}
+          rollout-labels: ${{ inputs.cluster-labels }}
+          rollout-namespace: ${{ needs.fetch-namespace.outputs.value }}
+          scaleway-organization-id: ${{ inputs.scaleway-organization-id }}
+          scaleway-project-id: ${{ inputs.scaleway-project-id }}
+          scaleway-region: ${{ inputs.scaleway-region }}
+          scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}

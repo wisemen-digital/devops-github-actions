@@ -24,7 +24,11 @@ on:  # yamllint disable-line rule:truthy
       # Cluster info
       cluster-deployments:
         description: List of deployments to rollout
-        required: true
+        required: false
+        type: string
+      cluster-labels:
+        description: List of labels to rollout
+        required: false
         type: string
     secrets:
       DIGITALOCEAN_API_USER:
@@ -51,10 +55,16 @@ jobs:
       CONTAINER_REGISTRY_PASSWORD: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
 
   rollout:
+    name: Rollout to k8s
     needs: [fetch-namespace, build-and-push]
-    uses: ./.github/workflows/docker-rollout-digitalocean.yml
-    with:
-      cluster-name: ${{ inputs.digitalocean-cluster-id }}
-      cluster-deployments: ${{ inputs.cluster-deployments }}
-      cluster-namespace: ${{ needs.fetch-namespace.outputs.value }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollout on cluster
+        uses: wisemen-digital/devops-ga-k8s-rollout@main
+        with:
+          vendor: digitalocean
+          cluster-id: ${{ inputs.digitalocean-cluster-id }}
+          rollout-deployments: ${{ inputs.cluster-deployments }}
+          rollout-labels: ${{ inputs.cluster-labels }}
+          rollout-namespace: ${{ needs.fetch-namespace.outputs.value }}
+          digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
