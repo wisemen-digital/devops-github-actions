@@ -51,26 +51,19 @@ on:  # yamllint disable-line rule:truthy
         required: true
 
 jobs:
-  fetch-namespace:
-    uses: ./.github/workflows/github-fetch-environment-variable.yml
-    with:
-      environment: ${{ inputs.environment }}
-      variable: K8S_NAMESPACE
-
-  build-and-push:
-    uses: ./.github/workflows/docker-build-and-push.yml
-    with:
-      container-registry: ${{ inputs.scaleway-container-registry }}
-      tag: ${{ inputs.environment }}
-    secrets:
-      CONTAINER_REGISTRY_USERNAME: nologin
-      CONTAINER_REGISTRY_PASSWORD: ${{ secrets.SCALEWAY_SECRET_KEY }}
-
-  rollout:
-    name: Rollout to k8s
-    needs: [fetch-namespace, build-and-push]
+  build-and-deploy:
+    name: Build & Deploy to ${{ inputs.environment }}
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
+      - name: Docker build & push
+        uses: wisemen-digital/devops-ga-docker-build-push@main
+        with:
+          container-registry: ${{ inputs.scaleway-container-registry }}
+          container-registry-username: nologin
+          container-registry-password: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          github-access-token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ inputs.environment }}
       - name: Rollout on cluster
         uses: wisemen-digital/devops-ga-k8s-rollout@main
         with:
