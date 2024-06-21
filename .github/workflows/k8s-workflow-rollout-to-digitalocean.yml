@@ -7,12 +7,9 @@ name: Rollout deployments (DigitalOcean)
 
 on:  # yamllint disable-line rule:truthy
   workflow_call:
+    # Depends on the following vars
+    # - K8S_CLUSTER_ID
     inputs:
-      # Scaleway information
-      digitalocean-cluster-id:
-        description: Target cluster ID
-        required: true
-        type: string
       # Cluster info
       cluster-deployments:
         description: List of deployments to roll out (folders), separated by commas
@@ -35,7 +32,7 @@ jobs:
         uses: wisemen-digital/devops-ga-changed-paths-filter@main
         with:
           filter-file: .github/k8s-rollout-filters.yaml
-          changes-override: ${{ github.event.inputs.deployments }}
+          changes-override: ${{ inputs.cluster-deployments }}
 
   rollout-to-k8s:
     name: Rollout to k8s

@@ -7,29 +7,17 @@ name: Build & deploy to environment (DigitalOcean)
 
 on:  # yamllint disable-line rule:truthy
   workflow_call:
+    # Depends on the following vars
+    # - CONTAINER_REGISTRY_ENDPOINT
+    # - K8S_CLUSTER_ID
+    # - K8S_DEPLOYMENTS
+    # - K8S_LABELS
+    # - K8S_NAMESPACE
     inputs:
       environment:
         description: Target environment to deploy to
         type: string
         required: true
-      # DigitalOcean information
-      digitalocean-container-registry:
-        description: Container registry endpoint
-        required: true
-        type: string
-      digitalocean-cluster-id:
-        description: Target cluster ID
-        required: true
-        type: string
-      # Cluster info
-      cluster-deployments:
-        description: List of deployments to rollout
-        required: false
-        type: string
-      cluster-labels:
-        description: List of labels to rollout
-        required: false
-        type: string
     secrets:
       DIGITALOCEAN_API_USER:
         description: DigitalOcean user email
@@ -47,7 +35,7 @@ jobs:
       - name: Docker build & push
         uses: wisemen-digital/devops-ga-docker-build-push@main
         with:
-          container-registry: ${{ inputs.scaleway-container-registry }}
+          container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
           container-registry-username: ${{ secrets.DIGITALOCEAN_API_USER }}
           container-registry-password: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
           github-access-token: ${{ secrets.GITHUB_TOKEN }}
@@ -56,8 +44,8 @@ jobs:
         uses: wisemen-digital/devops-ga-k8s-rollout@main
         with:
           vendor: digitalocean
-          cluster-id: ${{ inputs.digitalocean-cluster-id }}
-          rollout-deployments: ${{ inputs.cluster-deployments }}
-          rollout-labels: ${{ inputs.cluster-labels }}
-          rollout-namespace: ${{ needs.fetch-namespace.outputs.value }}
+          cluster-id: ${{ vars.K8S_CLUSTER_ID }}
+          rollout-deployments: ${{ vars.K8S_DEPLOYMENTS }}
+          rollout-labels: ${{ vars.K8S_LABELS }}
+          rollout-namespace: ${{ vars.K8S_NAMESPACE }}
           digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}

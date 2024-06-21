@@ -7,6 +7,15 @@ name: Promote to environment (Scaleway)
 
 on:  # yamllint disable-line rule:truthy
   workflow_call:
+    # Depends on the following vars
+    # - CONTAINER_REGISTRY_ENDPOINT
+    # - K8S_CLUSTER_ID
+    # - K8S_DEPLOYMENTS
+    # - K8S_LABELS
+    # - K8S_NAMESPACE
+    # - SCALEWAY_ORGANIZATION_ID
+    # - SCALEWAY_PROJECT_ID
+    # - SCALEWAY_REGION
     inputs:
       environment-source:
         description: Source environment to deploy FROM (defaults to previous environment)
@@ -16,41 +25,35 @@ on:  # yamllint disable-line rule:truthy
         description: Target environment to deploy TO
         type: string
         required: true
-      # Scaleway information
-      scaleway-container-registry:
-        description: Container registry endpoint
-        required: true
-        type: string
-      scaleway-organization-id:
-        description: Scaleway organization ID
-        required: true
-        type: string
-      scaleway-project-id:
-        description: Scaleway project ID
-        required: true
-        type: string
-      scaleway-region:
-        description: Target deployment region (such as nl-ams)
-        required: true
-        type: string
-      scaleway-cluster-id:
-        description: Target cluster ID
-        required: true
-        type: string
-      # Cluster info
-      cluster-deployments:
-        description: List of deployments to rollout
-        required: false
-        type: string
-      cluster-labels:
-        description: List of labels to rollout
-        required: false
-        type: string
-      # Extra options, probably not needed
       environment-map:
         description: Environment map (JSON, fallback to default map)
         type: string
         required: false
+      # Legacy parameters
+      cluster-deployments:
+        description: UNUSED
+        required: false
+        type: string
+      scaleway-container-registry:
+        description: UNUSED
+        required: false
+        type: string
+      scaleway-organization-id:
+        description: UNUSED
+        required: false
+        type: string
+      scaleway-project-id:
+        description: UNUSED
+        required: false
+        type: string
+      scaleway-region:
+        description: UNUSED
+        required: false
+        type: string
+      scaleway-cluster-id:
+        description: UNUSED
+        required: false
+        type: string
     secrets:
       SCALEWAY_ACCESS_KEY:
         description: Scaleway API key ID
@@ -68,7 +71,7 @@ jobs:
       - name: Re-tag image
         uses: wisemen-digital/devops-ga-docker-promote-tag@main
         with:
-          container-registry: ${{ inputs.scaleway-container-registry }}
+          container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
           container-registry-username: nologin
           container-registry-password: ${{ secrets.SCALEWAY_SECRET_KEY }}
           source-tag: ${{ inputs.environment-source }}
@@ -78,12 +81,12 @@ jobs:
         uses: wisemen-digital/devops-ga-k8s-rollout@main
         with:
           vendor: scaleway
-          cluster-id: ${{ inputs.scaleway-cluster-id }}
-          rollout-deployments: ${{ inputs.cluster-deployments }}
-          rollout-labels: ${{ inputs.cluster-labels }}
-          rollout-namespace: ${{ needs.fetch-namespace.outputs.value }}
-          scaleway-organization-id: ${{ inputs.scaleway-organization-id }}
-          scaleway-project-id: ${{ inputs.scaleway-project-id }}
-          scaleway-region: ${{ inputs.scaleway-region }}
+          cluster-id: ${{ vars.K8S_CLUSTER_ID }}
+          rollout-deployments: ${{ vars.K8S_DEPLOYMENTS }}
+          rollout-labels: ${{ vars.K8S_LABELS }}
+          rollout-namespace: ${{ vars.K8S_NAMESPACE }}
+          scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+          scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
+          scaleway-region: ${{ vars.SCALEWAY_REGION }}
           scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
