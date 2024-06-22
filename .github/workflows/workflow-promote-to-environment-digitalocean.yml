@@ -48,34 +48,20 @@ on:  # yamllint disable-line rule:truthy
         required: true
 
 jobs:
-  fetch-namespace:
-    uses: ./.github/workflows/github-fetch-environment-variable.yml
-    with:
-      environment: ${{ inputs.environment-target }}
-      variable: K8S_NAMESPACE
-
-  calculate-source:
-    uses: ./.github/workflows/github-calculate-source-environment.yml
-    with:
-      target: ${{ inputs.environment-target }}
-      source: ${{ inputs.environment-source }}
-
-  docker-add-tag:
-    needs: calculate-source
-    uses: ./.github/workflows/docker-add-tag.yml
-    with:
-      container-registry: ${{ inputs.digitalocean-container-registry }}
-      source-tag: ${{ needs.calculate-source.outputs.source }}
-      target-tag: ${{ needs.calculate-source.outputs.target }}
-    secrets:
-      CONTAINER_REGISTRY_USERNAME: ${{ secrets.DIGITALOCEAN_API_USER }}
-      CONTAINER_REGISTRY_PASSWORD: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
-
-  rollout:
-    name: Rollout to k8s
-    needs: [fetch-namespace, docker-add-tag]
+  promote-tag:
+    name: Promote to ${{ inputs.environment-target }}
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment-target }}
     steps:
+      - name: Re-tag image
+        uses: wisemen-digital/devops-ga-docker-promote-tag@main
+        with:
+          container-registry: ${{ inputs.scaleway-container-registry }}
+          container-registry-username: ${{ secrets.DIGITALOCEAN_API_USER }}
+          container-registry-password: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          source-tag: ${{ inputs.environment-source }}
+          target-tag: ${{ inputs.environment-target }}
+          tag-map: ${{ inputs.environment-map }}
       - name: Rollout on cluster
         uses: wisemen-digital/devops-ga-k8s-rollout@main
         with:
