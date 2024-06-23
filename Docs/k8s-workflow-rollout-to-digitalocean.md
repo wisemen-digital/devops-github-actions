@@ -12,14 +12,19 @@ Note: this workflow is meant for deployments to **DigitalOcean**.
 
 ## Inputs
 
-| Variable | Description |
-| -------- | ----------- |
-| `digitalocean-cluster-id` | Target cluster ID (name) |
+| Input | Description |
+| ----- | ----------- |
 | `cluster-deployments` | List of deployments to rollout, separated by commas |
 
 | Secret | Description |
-| -------- | ----------- |
+| ------ | ----------- |
 | `DIGITALOCEAN_API_TOKEN` | DigitalOcean API token |
+
+This workflow also depends on the following "variables" to be defined:
+
+| Variable | Description |
+| -------- | ----------- |
+| `K8S_CLUSTER_ID` | Target cluster ID |
 
 ## Outputs
 

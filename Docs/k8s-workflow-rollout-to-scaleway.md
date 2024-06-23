@@ -12,18 +12,23 @@ Note: this workflow is meant for deployments to **Scaleway**.
 
 ## Inputs
 
-| Variable | Description |
-| -------- | ----------- |
-| `scaleway-organization-id` | Scaleway organization ID |
-| `scaleway-project-id` | Scaleway project ID, the same as org. ID for default projects |
-| `scaleway-region` | Target deployment region (such as `nl-ams`) |
-| `scaleway-cluster-id` | Target cluster ID |
+| Input | Description |
+| ----- | ----------- |
 | `cluster-deployments` | List of deployments to rollout, separated by commas |
 
 | Secret | Description |
+| ------ | ----------- |
+| `SCALEWAY_ACCESS_KEY` | Scaleway API key ID |
+| `SCALEWAY_SECRET_KEY` | Scaleway API key secret |
+
+This workflow also depends on the following "variables" to be defined:
+
+| Variable | Description |
 | -------- | ----------- |
-| `SCALEWAY_ACCESS_KEY` | Target environment to deploy to, usually `development` |
-| `SCALEWAY_SECRET_KEY` | Scaleway API key ID |
+| `K8S_CLUSTER_ID` | Target cluster ID |
+| `SCALEWAY_ORGANIZATION_ID` | Scaleway organization ID |
+| `SCALEWAY_PROJECT_ID` | Scaleway project ID, the same as org. ID for default projects |
+| `SCALEWAY_REGION` | Target deployment region (such as `nl-ams`) |
 
 ## Outputs
 

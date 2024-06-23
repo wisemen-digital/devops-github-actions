@@ -2,26 +2,33 @@
 
 ## Description
 
-This workflow will build the docker image and deploy it to the given environment (kubernetes rollout).
+This workflow will build the docker image and deploy it to the given environment (kubernetes rollout). If kubernetes labels are provided, the list of deployments will **not** be used.
 
 Note: this workflow is meant for deployments to **Scaleway**.
 
 ## Inputs
 
-| Variable | Description |
-| -------- | ----------- |
+| Input | Description |
+| ----- | ----------- |
 | `environment` | Target environment to deploy to, usually `development` |
-| `scaleway-container-registry` | Container registry endpoint |
-| `scaleway-organization-id` | Scaleway organization ID |
-| `scaleway-project-id` | Scaleway project ID, the same as org. ID for default projects |
-| `scaleway-region` | Target deployment region (such as `nl-ams`) |
-| `scaleway-cluster-id` | Target cluster ID |
-| `cluster-deployments` | List of deployments to rollout, separated by spaces |
 
 | Secret | Description |
-| -------- | ----------- |
+| ------ | ----------- |
 | `SCALEWAY_ACCESS_KEY` | Scaleway API key ID |
 | `SCALEWAY_SECRET_KEY` | Scaleway API key secret |
+
+This workflow also depends on the following "variables" to be defined:
+
+| Variable | Description |
+| -------- | ----------- |
+| `CONTAINER_REGISTRY_ENDPOINT` | Container registry endpoint |
+| `K8S_CLUSTER_ID` | Target cluster ID |
+| `K8S_DEPLOYMENTS` | List of deployments to rollout, separated by commas or spaces |
+| `K8S_LABELS` | List of labels to rollout, separated by commas or spaces |
+| `K8S_NAMESPACE` | Target cluster namespace |
+| `SCALEWAY_ORGANIZATION_ID` | Scaleway organization ID |
+| `SCALEWAY_PROJECT_ID` | Scaleway project ID, the same as org. ID for default projects |
+| `SCALEWAY_REGION` | Target deployment region (such as `nl-ams`) |
 
 ## Outputs
 

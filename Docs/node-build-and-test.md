@@ -19,8 +19,8 @@ For the test job, it will set up:
 
 ## Inputs
 
-| Variable | Description |
-| -------- | ----------- |
+| Input | Description |
+| ----- | ----------- |
 | `node-version` | Node version to use, defaults to `lts` |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
 | `test-postgres-image` | PostgreSQL image to use for the tests, defaults to `postgis` |

@@ -21,8 +21,8 @@ Note that the tests are run using the `vitest` tool.
 
 ## Inputs
 
-| Variable | Description |
-| -------- | ----------- |
+| Input | Description |
+| ----- | ----------- |
 | `node-version` | Node version to use, defaults to `lts` |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
 

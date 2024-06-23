@@ -19,8 +19,8 @@ Note that the tests are run using the `pest` tool.
 
 ## Inputs
 
-| Variable | Description |
-| -------- | ----------- |
+| Input | Description |
+| ----- | ----------- |
 | `php-version` | PHP version to use, defaults to `8.3` |
 | `test-mysql-image` | MySQL image to use for the tests, defaults to MySQL 8 |
 
