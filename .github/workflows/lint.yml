@@ -1,7 +1,7 @@
 ---
 name: Lint
 
-on:  # yamllint disable-line rule:truthy
+on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
@@ -12,7 +12,8 @@ on:  # yamllint disable-line rule:truthy
 
 jobs:
   yaml-lint:
-    name: Lint YAML & Dockerfile
-    uses: ./.github/workflows/lint-yaml-and-docker.yml
-    with:
-      enable-docker-linting: false
+    name: Lint YAML
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lint
+        uses: wisemen-digital/devops-ga-lint-yaml@main

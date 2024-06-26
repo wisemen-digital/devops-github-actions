@@ -5,7 +5,7 @@ name: Promote to environment (Scaleway)
 # Calculate previous environment, re-tag the image and roll it out.
 #
 
-on:  # yamllint disable-line rule:truthy
+on:
   workflow_call:
     # Depends on the following vars
     # - CONTAINER_REGISTRY_ENDPOINT

@@ -6,7 +6,7 @@ name: Build & Test Web
 # Note: will create an artifact called 'app-build'.
 #
 
-on:  # yamllint disable-line rule:truthy
+on:
   workflow_call:
     inputs:
       node-version:

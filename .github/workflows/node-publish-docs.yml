@@ -5,7 +5,7 @@ name: Deploy Node documentation to GitHub Pages
 # Deploy node documentation to github pages.
 #
 
-on:  # yamllint disable-line rule:truthy
+on:
   workflow_call:
     inputs:
       dist-path:

@@ -5,7 +5,7 @@ name: Lint YAML & Dockerfile
 # Validate all yaml files in a given path
 #
 
-on:  # yamllint disable-line rule:truthy
+on:
   workflow_call:
     inputs:
       yaml-paths:

@@ -8,7 +8,7 @@ name: Deploy Laravel (Legacy)
 # Example: https://github.com/…/actions/runs/6250541299 -> 6250541299
 #
 
-on:  # yamllint disable-line rule:truthy
+on:
   workflow_call:
     inputs:
       workflow-run-id:
