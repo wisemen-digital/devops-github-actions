@@ -21,6 +21,7 @@ This workflow also depends on the following "variables" to be defined:
 
 | Variable | Description |
 | -------- | ----------- |
+| `CONTAINER_PLATFORMS` | Comma separated list of platforms (architectures) to build for. Defaults to `linux/amd64` |
 | `CONTAINER_REGISTRY_ENDPOINT` | Container registry endpoint |
 | `K8S_CLUSTER_ID` | Target cluster ID |
 | `K8S_DEPLOYMENTS` | List of deployments to rollout, separated by commas or spaces |

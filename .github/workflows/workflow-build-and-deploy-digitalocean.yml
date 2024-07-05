@@ -8,6 +8,7 @@ name: Build & deploy to environment (DigitalOcean)
 on:
   workflow_call:
     # Depends on the following vars
+    # - CONTAINER_PLATFORMS
     # - CONTAINER_REGISTRY_ENDPOINT
     # - K8S_CLUSTER_ID
     # - K8S_DEPLOYMENTS
@@ -40,6 +41,7 @@ jobs:
           container-registry-password: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
           github-access-token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ inputs.environment }}
+          platforms: ${{ vars.CONTAINER_PLATFORMS }}
       - name: Rollout on cluster
         uses: wisemen-digital/devops-ga-k8s-rollout@main
         with:
