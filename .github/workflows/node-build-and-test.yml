@@ -168,13 +168,7 @@ jobs:
         with:
           name: app-build
       - name: Run tests
-        run: |
-          if test -f '.env.test'; then
-            cp -f '.env.test' '.env'
-          fi
-          node --test -r dotenv/config \
-            --test-reporter=tap --test-reporter-destination=stdout \
-            --test-reporter=junit --test-reporter-destination="test-report-junit.xml"
+        run: pnpm test:pipeline
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
