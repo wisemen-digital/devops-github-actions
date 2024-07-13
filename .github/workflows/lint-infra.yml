@@ -58,3 +58,51 @@ jobs:
             done
           done
           exit $result
+
+  xml-lint:
+    name: Lint XML
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install xmllint
+        if: ${{ hashFiles('s3/**/*.xml') != '' }}
+        run: sudo apt-get -qq install -y libxml2-utils
+      - name: Configure XML reporter
+        if: ${{ hashFiles('s3/**/*.xml') != '' }}
+        uses: korelstar/xmllint-problem-matcher@v1
+      - name: Validate S3 CORS configurations
+        if: ${{ hashFiles('s3/**/cors.xml') != '' }}
+        run: |
+          echo '${{ env.aws-xsd }}' > "aws.xsd"
+          find s3 -name "cors.xml" -print0 | xargs -0 xmllint --schema aws.xsd --noout
+        env:
+          aws-xsd: >-
+            <?xml version="1.0" encoding="UTF-8"?>
+            <xsd:schema
+              xmlns:tns="http://s3.amazonaws.com/doc/2006-03-01/"
+              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+              elementFormDefault="qualified"
+              targetNamespace="http://s3.amazonaws.com/doc/2006-03-01/">
+              <xsd:element name="CORSConfiguration" type="tns:CORSConfigurationType"/>
+              <xsd:complexType name="CORSConfigurationType">
+                <xsd:sequence>
+                  <xsd:element name="CORSRule" type="tns:CORSRuleType"
+                    minOccurs="1" maxOccurs="unbounded"/>
+                </xsd:sequence>
+              </xsd:complexType>
+              <xsd:complexType name="CORSRuleType">
+                <xsd:sequence>
+                  <xsd:element name="AllowedHeader" type="xsd:string"
+                    minOccurs="0" maxOccurs="unbounded"/>
+                  <xsd:element name="AllowedMethod" type="xsd:string"
+                    minOccurs="1" maxOccurs="unbounded"/>
+                  <xsd:element name="AllowedOrigin" type="xsd:string"
+                    minOccurs="1" maxOccurs="unbounded"/>
+                  <xsd:element name="ExposeHeader" type="xsd:string"
+                    minOccurs="0" maxOccurs="unbounded"/>
+                  <xsd:element name="MaxAgeSeconds" type="xsd:positiveInteger"
+                    minOccurs="0" maxOccurs="1"/>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:schema>
