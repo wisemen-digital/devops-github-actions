@@ -22,8 +22,8 @@ on:
         default: false
         type: boolean
       test-nats-image:
-        description: Image to use for NATS test store (defaults to normal image)
-        default: 'nats:alpine'
+        description: Image to use for NATS test store (defaults to our test image)
+        default: 'ghcr.io/wisemen-digital/test-nats:latest'
         type: string
       test-postgres-image:
         description: Image to use for PostgreSQL test DB (defaults to normal image)
