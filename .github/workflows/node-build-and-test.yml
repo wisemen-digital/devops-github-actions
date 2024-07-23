@@ -190,6 +190,9 @@ jobs:
           if test -f '.env.test'; then
             cp -f '.env.test' '.env'
           fi
+          if test -f 'dist/src/utils/test-setup/global-setup.js'; then
+            node dist/src/utils/test-setup/global-setup.js
+          fi
           node --test -r dotenv/config \
             --test-reporter=tap --test-reporter-destination=stdout \
             --test-reporter=junit --test-reporter-destination="test-report-junit.xml"
