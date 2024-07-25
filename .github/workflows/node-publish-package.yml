@@ -1,0 +1,116 @@
+---
+name: Publish Node package to NPM and create a GH release
+
+#
+# Publish node package to NPM and create a GH release.
+#
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node Version (such as 20.5)
+        default: 'lts/*'
+        type: string
+      registry-url:
+        description: NPM Registry URL
+        default: 'https://registry.npmjs.org/'
+        type: string
+      access:
+        description: Package Access (`public` or `restricted`)
+        required: true
+        type: string
+      packages:
+        description: Packages to publish (for workspaces)
+        required: false
+        type: string
+      tag:
+        description: Tag that's being published
+        required: true
+        type: string
+    secrets:
+      NPM_TOKEN:
+        description: Token for NPM registry
+        required: true
+
+env:
+  git-ref: 'refs/tags/${{ inputs.tag }}'
+
+jobs:
+  prepare:
+    name: Prepare Environment
+    runs-on: ubuntu-latest
+    outputs:
+      pnpm-flags: ${{ steps.prepare.outputs.pnpm-flags }}
+    steps:
+      - name: Prepare environment
+        id: prepare
+        run: |
+          echo "pnpm-flags<<EOF" >> "$GITHUB_OUTPUT"
+          if [ -n "$PACKAGES" ]; then
+            echo -n "--recursive" >> "$GITHUB_OUTPUT"
+            for package in ${PACKAGES/,/ }; do
+              echo -n " --filter=\"$package\"" >> "$GITHUB_OUTPUT"
+            done
+          fi
+          printf "\nEOF\n" >> "$GITHUB_OUTPUT"
+        env:
+          PACKAGES: ${{ inputs.packages }}
+  build:
+    name: Build Package
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.git-ref }}
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile ${{ needs.prepare.outputs.pnpm-flags }}
+      - name: Run build
+        run: pnpm ${{ needs.prepare.outputs.pnpm-flags }} run build
+  deploy:
+    name: Deploy Package
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.git-ref }}
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+          registry-url: ${{ inputs.registry-url }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile ${{ needs.prepare.outputs.pnpm-flags }}
+      - name: Publish package to registry
+        run: >-
+          pnpm ${{ needs.prepare.outputs.pnpm-flags }} publish
+          --access ${{ inputs.access }}
+          --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PACKAGES: ${{ inputs.packages }}
+      # Try to publish to GH, but is allowed to fail (if already exists)
+      - name: Create Github Release
+        uses: softprops/action-gh-release@v2
+        continue-on-error: true
+        with:
+          name: v${{ inputs.tag }}
+          tag_name: ${{ env.git-ref }}
+          generate_release_notes: true
