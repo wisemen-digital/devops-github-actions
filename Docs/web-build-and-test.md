@@ -13,11 +13,17 @@ This job presumes there's a `lint` package command, which usually invokes `eslin
 
 Same as with lint, this presumes there's a `type-check` package command.
 
-### Test
+### Unit Tests
 
-This will use your `.env.test` as environment.
+This will use your `.env.test` as environment, and set the `ENVIRONMENT` to `ci-test-unit`.
 
 Note that the tests are run using the `vitest` tool.
+
+### E2E Tests
+
+This will use your `.env.test` as environment, and set the `ENVIRONMENT` to `ci-test-e2e`.
+
+Note that the tests are run using the `playwright` tool.
 
 ## Inputs
 
