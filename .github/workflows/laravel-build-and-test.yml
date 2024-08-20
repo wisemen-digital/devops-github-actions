@@ -14,6 +14,10 @@ on:
         default: '8.3'
         required: true
         type: string
+      test-timeout:
+        description: Time (in minutes) after wich the test job will timeout
+        default: 5
+        type: number
       test-mysql-image:
         description: Image to use for MySQL test DB (defaults to normal image)
         default: 'mysql:8'
@@ -72,7 +76,7 @@ jobs:
     name: Test Application
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: ${{ inputs.test-timeout }}
     container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     env:
       DB_CONNECTION: mysql

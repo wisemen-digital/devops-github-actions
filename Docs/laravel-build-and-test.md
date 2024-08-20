@@ -22,6 +22,7 @@ Note that the tests are run using the `pest` tool.
 | Input | Description |
 | ----- | ----------- |
 | `php-version` | PHP version to use, defaults to `8.3` |
+| `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
 | `test-mysql-image` | MySQL image to use for the tests, defaults to MySQL 8 |
 
 ## Outputs
