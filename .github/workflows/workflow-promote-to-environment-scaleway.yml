@@ -33,6 +33,10 @@ on:
         description: Image name (fallback to repository name)
         type: string
         required: false
+      monorepo-project:
+        description: Projects to deploy, monorepo's only (comma seperated)
+        type: string
+        required: false
       # Legacy parameters
       cluster-deployments:
         description: UNUSED
@@ -67,8 +71,35 @@ on:
         required: true
 
 jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.monorepo-matrix.outputs.matrix || steps.simple-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Monorepo Matrix check
+        id: monorepo-matrix
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') != ''
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/monorepo-rollout-filters.yaml
+          changes-override: ${{ inputs.monorepo-project}}
+          output-key-name: variant
+      - name: Simple Matrix check
+        id: simple-matrix
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
+        run: echo "matrix=$(echo '[{"variant":"","path":""}]' | jq -c)" >> $GITHUB_OUTPUT;
   promote-tag:
     name: Promote to ${{ inputs.environment-target }}
+    needs: [generate-matrix]
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    strategy:
+      matrix:
+        path: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment-target }}
     steps:
@@ -76,22 +107,24 @@ jobs:
         run: |
           echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
       - name: Re-tag image
-        uses: wisemen-digital/devops-ga-docker-promote-tag@main
+        uses: wisemen-digital/devops-ga-docker-promote-tag@image-suffix
         with:
           container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
           container-registry-username: nologin
           container-registry-password: ${{ secrets.SCALEWAY_SECRET_KEY }}
           image: ${{ env.image }}
+          image-suffix: ${{ matrix.path.variant }}
           source-tag: ${{ inputs.environment-source }}
           target-tag: ${{ inputs.environment-target }}
           tag-map: ${{ inputs.environment-map }}
       - name: Rollout on cluster
-        uses: wisemen-digital/devops-ga-k8s-rollout@main
+        uses: wisemen-digital/devops-ga-k8s-rollout@label-suffix
         with:
           vendor: scaleway
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
           rollout-deployments: ${{ vars.K8S_DEPLOYMENTS }}
           rollout-labels: ${{ vars.K8S_LABELS }}
+          rollout-labels-suffix: ${{ matrix.path.variant }}
           rollout-namespace: ${{ vars.K8S_NAMESPACE }}
           scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
           scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}

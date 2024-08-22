@@ -26,6 +26,10 @@ on:
         description: Image name (fallback to repository name)
         type: string
         required: false
+      monorepo-deployments:
+        description: List of projects to roll out (folders), separated by commas
+        type: string
+        required: false
       # Legacy parameters
       cluster-deployments:
         description: UNUSED
@@ -60,8 +64,35 @@ on:
         required: true
 
 jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.monorepo-matrix.outputs.matrix || steps.simple-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Monorepo Matrix check
+        id: monorepo-matrix
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') != ''
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/monorepo-rollout-filters.yaml
+          changes-override: ${{ inputs.monorepo-deployments}}
+          output-key-name: variant
+      - name: Simple Matrix check
+        id: simple-matrix
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
+        run: echo "matrix=$(echo '[{"variant":"","path":""}]' | jq -c)" >> $GITHUB_OUTPUT;
   build-and-deploy:
-    name: Build & Deploy to ${{ inputs.environment }}
+    name: Build to
+    needs: [generate-matrix]
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    strategy:
+      matrix:
+        path: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
@@ -76,8 +107,11 @@ jobs:
           container-registry-password: ${{ secrets.SCALEWAY_SECRET_KEY }}
           github-access-token: ${{ secrets.GITHUB_TOKEN }}
           image: ${{ env.image }}
+          image-suffix: ${{ matrix.path.variant }}
           tag: ${{ inputs.environment }}
           platforms: ${{ vars.CONTAINER_PLATFORMS }}
+          target: ${{ matrix.path.variant }}
+          build-argument: BUILD_TARGET=${{ matrix.path.variant }}
       - name: Rollout on cluster
         uses: wisemen-digital/devops-ga-k8s-rollout@main
         with:
@@ -85,6 +119,7 @@ jobs:
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
           rollout-deployments: ${{ vars.K8S_DEPLOYMENTS }}
           rollout-labels: ${{ vars.K8S_LABELS }}
+          rollout-labels-suffix: ${{ matrix.path.variant }}
           rollout-namespace: ${{ vars.K8S_NAMESPACE }}
           scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
           scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
