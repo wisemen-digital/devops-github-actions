@@ -187,13 +187,11 @@ jobs:
           name: app-build
       - name: Run tests
         run: |
-          if test -f '.env.test'; then
-            cp -f '.env.test' '.env'
-          fi
+          touch '.env.test'
           if test -f 'dist/src/utils/test-setup/global-setup.js'; then
-            node dist/src/utils/test-setup/global-setup.js
+            node --env-file=.env.test dist/src/utils/test-setup/global-setup.js
           fi
-          node --test -r dotenv/config \
+          node --test --env-file=.env.test \
             --test-reporter=tap --test-reporter-destination=stdout \
             --test-reporter=junit --test-reporter-destination="test-report-junit.xml"
       - name: Publish test report
