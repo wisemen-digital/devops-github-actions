@@ -10,8 +10,8 @@ on:
     inputs:
       dist-path:
         description: Path to build output
-        default: 'docs/.vitepress/dist/'
         type: string
+        required: true
 
 jobs:
   build:
