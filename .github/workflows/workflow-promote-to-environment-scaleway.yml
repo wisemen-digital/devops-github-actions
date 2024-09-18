@@ -29,6 +29,10 @@ on:
         description: Environment map (JSON, fallback to default map)
         type: string
         required: false
+      image:
+        description: Image name (fallback to repository name)
+        type: string
+        required: false
       # Legacy parameters
       cluster-deployments:
         description: UNUSED
@@ -68,12 +72,16 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment-target }}
     steps:
+      - name: Prepare environment
+        run: |
+          echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
       - name: Re-tag image
         uses: wisemen-digital/devops-ga-docker-promote-tag@main
         with:
           container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
           container-registry-username: nologin
           container-registry-password: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          image: ${{ env.image }}
           source-tag: ${{ inputs.environment-source }}
           target-tag: ${{ inputs.environment-target }}
           tag-map: ${{ inputs.environment-map }}

@@ -15,6 +15,7 @@ Note: this workflow is meant for deployments to **DigitalOcean**.
 | `environment-source` | Source environment to deploy from |
 | `environment-target` | Target environment to deploy to |
 | `environment-map` | Custom environment mapping (JSON object) |
+| `image` | Image name (fallback to repository name) |
 
 | Secret | Description |
 | ------ | ----------- |

@@ -19,6 +19,10 @@ on:
         description: Target environment to deploy to
         type: string
         required: true
+      image:
+        description: Image name (fallback to repository name)
+        type: string
+        required: false
     secrets:
       DIGITALOCEAN_API_USER:
         description: DigitalOcean user email
@@ -33,6 +37,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
+      - name: Prepare environment
+        run: |
+          echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
       - name: Docker build & push
         uses: wisemen-digital/devops-ga-docker-build-push@main
         with:
@@ -40,6 +47,7 @@ jobs:
           container-registry-username: ${{ secrets.DIGITALOCEAN_API_USER }}
           container-registry-password: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
           github-access-token: ${{ secrets.GITHUB_TOKEN }}
+          image: ${{ env.image }}
           tag: ${{ inputs.environment }}
           platforms: ${{ vars.CONTAINER_PLATFORMS }}
       - name: Rollout on cluster

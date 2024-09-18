@@ -26,6 +26,10 @@ on:
         description: Environment map (JSON, fallback to default map)
         type: string
         required: false
+      image:
+        description: Image name (fallback to repository name)
+        type: string
+        required: false
     secrets:
       DIGITALOCEAN_API_USER:
         description: DigitalOcean user email
@@ -40,12 +44,16 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment-target }}
     steps:
+      - name: Prepare environment
+        run: |
+          echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
       - name: Re-tag image
         uses: wisemen-digital/devops-ga-docker-promote-tag@main
         with:
           container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
           container-registry-username: ${{ secrets.DIGITALOCEAN_API_USER }}
           container-registry-password: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          image: ${{ env.image }}
           source-tag: ${{ inputs.environment-source }}
           target-tag: ${{ inputs.environment-target }}
           tag-map: ${{ inputs.environment-map }}
