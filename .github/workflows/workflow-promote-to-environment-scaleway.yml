@@ -79,11 +79,11 @@ jobs:
       - name: Prepare environment
         run: |
           echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
-          if [ -z "${{ matrix.path.variant }}" ]; then
+          if [ -z "${{ inputs.image-variant }}" ]; then
             echo "image_suffix=" >> "$GITHUB_ENV"
             echo "rollout_labels=${{ vars.K8S_LABELS }}" >> "$GITHUB_ENV"
           else
-            echo "image_suffix=-${{ matrix.path.variant }}" >> "$GITHUB_ENV"
+            echo "image_suffix=-${{ inputs.image-variant }}" >> "$GITHUB_ENV"
             echo "rollout_labels=${{ vars.K8S_LABELS }},variant=${{ inputs.image-variant }}" >> "$GITHUB_ENV"
           fi
       - name: Re-tag image
