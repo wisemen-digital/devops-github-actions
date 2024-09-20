@@ -26,7 +26,7 @@ on:
         description: Image name (fallback to repository name)
         type: string
         required: false
-      image-variants:
+      image-variant:
         description: List of variants to roll out (folders), separated by commas
         type: string
         required: false
@@ -80,7 +80,7 @@ jobs:
         uses: wisemen-digital/devops-ga-changed-paths-filter@main
         with:
           filter-file: .github/monorepo-rollout-filters.yaml
-          changes-override: ${{ inputs.image-variants }}
+          changes-override: ${{ inputs.image-variant }}
           output-key-name: name
       - name: Normal Repo Fallback
         id: normalrepo
