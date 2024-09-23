@@ -100,12 +100,12 @@ jobs:
       - name: Prepare environment
         run: |
           echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
-          if [ -z "${{ matrix.variant.name }}" ]; then
+          if [ -z "${{ matrix.variant.path }}" ]; then
             echo "image_suffix=" >> "$GITHUB_ENV"
             echo "rollout_labels=${{ vars.K8S_LABELS }}" >> "$GITHUB_ENV"
           else
-            echo "image_suffix=-${{ matrix.variant.name }}" >> "$GITHUB_ENV"
-            echo "rollout_labels=${{ vars.K8S_LABELS }},variant=${{ matrix.variant.name }}" >> "$GITHUB_ENV"
+            echo "image_suffix=-${{ matrix.variant.path }}" >> "$GITHUB_ENV"
+            echo "rollout_labels=${{ vars.K8S_LABELS }},variant=${{ matrix.variant.path }}" >> "$GITHUB_ENV"
           fi
       - name: Docker build & push
         uses: wisemen-digital/devops-ga-docker-build-push@main
