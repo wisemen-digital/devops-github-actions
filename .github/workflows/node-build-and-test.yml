@@ -29,6 +29,10 @@ on:
         description: Image to use for PostgreSQL test DB (defaults to normal image)
         default: 'postgis/postgis'
         type: string
+      test-postgres-db:
+        description: Name to use for PostgreSQL test DB (defaults to test_db)
+        default: 'test_db'
+        type: string
       test-redis-enabled:
         description: Enable Redis test service (defaults to false)
         default: false
@@ -144,7 +148,7 @@ jobs:
         ports:
           - 5432:5432
         env:
-          POSTGRES_DB: 'test_db'
+          POSTGRES_DB: ${{ inputs.test-postgres-db }}
           POSTGRES_USER: 'postgres'
           POSTGRES_PASSWORD: 'password'
           POSTGRES_HOST_AUTH_METHOD: trust
