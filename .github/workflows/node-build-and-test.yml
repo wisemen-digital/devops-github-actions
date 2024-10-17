@@ -171,7 +171,7 @@ jobs:
         options: >-
           --health-cmd "${{ needs.prep-test.outputs.typesense-health }}"
           --health-interval 10s
-          --health-timeout 5s
+          --health-timeout 10s
           --health-retries 5
     steps:
       - name: Checkout
