@@ -17,6 +17,10 @@ on:
         description: Time (in minutes) after wich the test job will timeout
         default: 5
         type: number
+      test-playwright-image:
+        description: Image to use for Playwright testing (defaults to their prebuilt version)
+        default: 'mcr.microsoft.com/playwright:v1.48.2'
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -142,6 +146,9 @@ jobs:
     needs: [build]
     if: needs.build.outputs.playwright-configured == 'true'
     runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.test-playwright-image }}
+      options: --user 1001
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
       - name: Checkout
@@ -160,8 +167,6 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps
       - name: Prepare environment
         run: |
           if test -f '.env.test'; then
