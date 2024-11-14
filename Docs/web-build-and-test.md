@@ -31,6 +31,7 @@ Note that the tests are run using the `playwright` tool.
 | ----- | ----------- |
 | `node-version` | Node version to use, defaults to `lts` |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
+| `test-playwright-image` | Image to use for Playwright testing (defaults to their prebuilt version) |
 
 ## Outputs
 
