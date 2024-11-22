@@ -87,7 +87,7 @@ jobs:
         run: echo 'matrix=[{"environment":"","path":""}]' >> $GITHUB_OUTPUT;
 
   build-and-deploy:
-    name: Build & Deploy to ${{ inputs.environment }}
+    name: Build & Deploy ${{ matrix.variant.path }} to ${{ inputs.environment }}
     needs: [generate-matrix]
     if: ${{ needs.generate-matrix.outputs.variants != '[]' }}
     strategy:
