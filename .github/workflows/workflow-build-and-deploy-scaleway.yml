@@ -68,24 +68,23 @@ jobs:
     name: Generate job matrices
     runs-on: ubuntu-latest
     outputs:
-      variants: ${{ steps.monorepo-changed-paths.outputs.matrix || steps.normalrepo.outputs.matrix }}
+      variants: ${{ steps.monorepo.outputs.matrix || steps.normalrepo.outputs.matrix }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           sparse-checkout: .github
       - name: Monorepo Matrix check
-        id: monorepo-changed-paths
+        id: monorepo
         if: hashFiles('.github/monorepo-rollout-filters.yaml') != ''
         uses: wisemen-digital/devops-ga-changed-paths-filter@main
         with:
           filter-file: .github/monorepo-rollout-filters.yaml
           changes-override: ${{ inputs.image-variant }}
-          output-key-name: name
       - name: Normal Repo Fallback
         id: normalrepo
         if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
-        run: echo 'matrix=[{"name":"","path":""}]' >> $GITHUB_OUTPUT;
+        run: echo 'matrix=[{"environment":"","path":""}]' >> $GITHUB_OUTPUT;
 
   build-and-deploy:
     name: Build & Deploy to ${{ inputs.environment }}
