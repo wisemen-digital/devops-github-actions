@@ -26,8 +26,8 @@ on:
         description: Image name (fallback to repository name)
         type: string
         required: false
-      image-variant:
-        description: List of variants to roll out (folders), separated by commas
+      image-variants:
+        description: List of variants to build (folders in monorepo), separated by commas
         type: string
         required: false
       # Legacy parameters
@@ -80,7 +80,7 @@ jobs:
         uses: wisemen-digital/devops-ga-changed-paths-filter@main
         with:
           filter-file: .github/monorepo-rollout-filters.yaml
-          changes-override: ${{ inputs.image-variant }}
+          changes-override: ${{ inputs.image-variants }}
       - name: Normal Repo Fallback
         id: normalrepo
         if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''

@@ -33,8 +33,8 @@ on:
         description: Image name (fallback to repository name)
         type: string
         required: false
-      image-variant:
-        description: Image variant (for monorepos)
+      image-variants:
+        description: List of variants to roll out (folders in monorepo), separated by commas
         type: string
         required: false
       # Legacy parameters
@@ -71,20 +71,47 @@ on:
         required: true
 
 jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      variants: ${{ steps.monorepo.outputs.matrix || steps.normalrepo.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Monorepo Matrix check
+        id: monorepo
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') != ''
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/monorepo-rollout-filters.yaml
+          changes-override: ${{ inputs.image-variants }}
+      - name: Normal Repo Fallback
+        id: normalrepo
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
+        run: echo 'matrix=[{"environment":"","path":""}]' >> $GITHUB_OUTPUT;
+
   promote-tag:
     name: Promote to ${{ inputs.environment-target }}
+    needs: [generate-matrix]
+    if: ${{ needs.generate-matrix.outputs.variants != '[]' }}
+    strategy:
+      matrix:
+        variant: ${{ fromJson(needs.generate-matrix.outputs.variants) }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment-target }}
     steps:
       - name: Prepare environment
         run: |
           echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
-          if [ -z "${{ inputs.image-variant }}" ]; then
+          if [ -z "${{ matrix.variant.path }}" ]; then
             echo "image_suffix=" >> "$GITHUB_ENV"
             echo "rollout_labels=${{ vars.K8S_LABELS }}" >> "$GITHUB_ENV"
           else
-            echo "image_suffix=-${{ inputs.image-variant }}" >> "$GITHUB_ENV"
-            echo "rollout_labels=${{ vars.K8S_LABELS }},variant=${{ inputs.image-variant }}" >> "$GITHUB_ENV"
+            echo "image_suffix=-${{ matrix.variant.path }}" >> "$GITHUB_ENV"
+            echo "rollout_labels=${{ vars.K8S_LABELS }},variant=${{ matrix.variant.path }}" >> "$GITHUB_ENV"
           fi
       - name: Re-tag image
         uses: wisemen-digital/devops-ga-docker-promote-tag@main
