@@ -27,7 +27,7 @@ on:
         type: string
         required: false
       image-variants:
-        description: List of variants to build (folders in monorepo), separated by commas
+        description: List of variants to build (folders in monorepo, separated by commas)
         type: string
         required: false
       # Legacy parameters
@@ -114,7 +114,7 @@ jobs:
           container-registry-password: ${{ secrets.SCALEWAY_SECRET_KEY }}
           github-access-token: ${{ secrets.GITHUB_TOKEN }}
           image: ${{ env.image }}${{ env.image_suffix }}
-          tag: ${{ inputs.environment }}
+          tags: ${{ inputs.environment }}
           platforms: ${{ vars.CONTAINER_PLATFORMS }}
           target: ${{ matrix.variant.path }}
       - name: Rollout on cluster

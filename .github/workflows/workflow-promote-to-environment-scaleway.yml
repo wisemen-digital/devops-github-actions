@@ -34,7 +34,7 @@ on:
         type: string
         required: false
       image-variants:
-        description: List of variants to roll out (folders in monorepo), separated by commas
+        description: List of variants to roll out (folders in monorepo, separated by commas)
         type: string
         required: false
       # Legacy parameters
