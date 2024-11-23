@@ -12,6 +12,7 @@ Note: this workflow is meant for deployments to **Scaleway**.
 | ----- | ----------- |
 | `environment` | Target environment to deploy to, usually `development` |
 | `image` | Image name (fallback to repository name) |
+| `image-variants` | List of variants to build (folders in monorepo), separated by commas |
 
 | Secret | Description |
 | ------ | ----------- |

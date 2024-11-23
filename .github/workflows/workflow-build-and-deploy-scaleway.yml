@@ -26,6 +26,10 @@ on:
         description: Image name (fallback to repository name)
         type: string
         required: false
+      image-variants:
+        description: List of variants to build (folders in monorepo), separated by commas
+        type: string
+        required: false
       # Legacy parameters
       cluster-deployments:
         description: UNUSED
@@ -60,14 +64,48 @@ on:
         required: true
 
 jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      variants: ${{ steps.monorepo.outputs.matrix || steps.normalrepo.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Monorepo Matrix check
+        id: monorepo
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') != ''
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/monorepo-rollout-filters.yaml
+          changes-override: ${{ inputs.image-variants }}
+      - name: Normal Repo Fallback
+        id: normalrepo
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
+        run: echo 'matrix=[{"environment":"","path":""}]' >> $GITHUB_OUTPUT;
+
   build-and-deploy:
-    name: Build & Deploy to ${{ inputs.environment }}
+    name: Build & Deploy ${{ matrix.variant.path }} to ${{ inputs.environment }}
+    needs: [generate-matrix]
+    if: ${{ needs.generate-matrix.outputs.variants != '[]' }}
+    strategy:
+      matrix:
+        variant: ${{ fromJson(needs.generate-matrix.outputs.variants) }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
       - name: Prepare environment
         run: |
           echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
+          if [ -z "${{ matrix.variant.path }}" ]; then
+            echo "image_suffix=" >> "$GITHUB_ENV"
+            echo "rollout_labels=${{ vars.K8S_LABELS }}" >> "$GITHUB_ENV"
+          else
+            echo "image_suffix=-${{ matrix.variant.path }}" >> "$GITHUB_ENV"
+            echo "rollout_labels=${{ vars.K8S_LABELS }},variant=${{ matrix.variant.path }}" >> "$GITHUB_ENV"
+          fi
       - name: Docker build & push
         uses: wisemen-digital/devops-ga-docker-build-push@main
         with:
@@ -75,16 +113,17 @@ jobs:
           container-registry-username: nologin
           container-registry-password: ${{ secrets.SCALEWAY_SECRET_KEY }}
           github-access-token: ${{ secrets.GITHUB_TOKEN }}
-          image: ${{ env.image }}
+          image: ${{ env.image }}${{ env.image_suffix }}
           tag: ${{ inputs.environment }}
           platforms: ${{ vars.CONTAINER_PLATFORMS }}
+          target: ${{ matrix.variant.path }}
       - name: Rollout on cluster
         uses: wisemen-digital/devops-ga-k8s-rollout@main
         with:
           vendor: scaleway
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
           rollout-deployments: ${{ vars.K8S_DEPLOYMENTS }}
-          rollout-labels: ${{ vars.K8S_LABELS }}
+          rollout-labels: ${{ env.rollout_labels }}
           rollout-namespace: ${{ vars.K8S_NAMESPACE }}
           scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
           scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}

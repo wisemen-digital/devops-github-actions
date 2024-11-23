@@ -16,6 +16,7 @@ Note: this workflow is meant for deployments to **DigitalOcean**.
 | `environment-target` | Target environment to deploy to |
 | `environment-map` | Custom environment mapping (JSON object) |
 | `image` | Image name (fallback to repository name) |
+| `image-variants` | List of variants to roll out (folders in monorepo), separated by commas |
 
 | Secret | Description |
 | ------ | ----------- |
