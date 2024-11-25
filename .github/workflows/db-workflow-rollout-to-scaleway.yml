@@ -56,4 +56,4 @@ jobs:
           secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
           default-project-id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           default-organization-id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
-          args: instance create name=${{ matrix.deployment.path }} engine=PostgreSQL-15 user-name=admin generate-password=true node-type=DB-PLAY2-PICO
+          args: instance create name=test-db engine=PostgreSQL-15 user-name=admin generate-password=true node-type=DB-PLAY2-PICO
