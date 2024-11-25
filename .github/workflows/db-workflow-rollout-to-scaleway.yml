@@ -35,7 +35,7 @@ jobs:
         uses: wisemen-digital/devops-ga-changed-paths-filter@main
         with:
           filter-file: .github/db-rollout-filters.yaml
-          changes-override: ${{ inputs.bucket-deployments }}
+          changes-override: ${{ inputs.rdb-instance-deployments }}
 
   rollout-to-db:
     name: Rollout to db
