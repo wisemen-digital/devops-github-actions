@@ -1,0 +1,58 @@
+---
+name: Rollout database instance (Scaleway)
+
+#
+# Check what's changed (via filters, or provide your own list) and roll it out.
+#
+
+on:
+  workflow_call:
+    # Depends on the following vars
+    # - SCALEWAY_REGION
+    inputs:
+      # bucket info
+      rdb-instance-deployments:
+        description: List of rdb instances to roll out (folders), separated by commas
+        required: false
+        type: string
+    secrets:
+      SCALEWAY_ACCESS_KEY:
+        description: Scaleway API key ID
+        required: true
+      SCALEWAY_SECRET_KEY:
+        description: Scaleway API key secret
+        required: true
+
+jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
+    steps:
+      - name: Generate Matrix
+        id: changed-paths-filter
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/db-rollout-filters.yaml
+          changes-override: ${{ inputs.bucket-deployments }}
+
+  rollout-to-db:
+    name: Rollout to db
+    needs: [generate-matrix]
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    runs-on: ubuntu-latest
+    environment: ${{ matrix.deployment.environment }}
+    steps:
+      - name: Use CLI
+        uses: scaleway/action-scw@v0
+        with:
+          save-config: true
+          access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          default-project-id: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          default-organization-id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          args: instance create name=${{ matrix.deployment.path }} engine=PostgreSQL-15 user-name=admin generate-password=true node-type=DB-PLAY2-PICO
