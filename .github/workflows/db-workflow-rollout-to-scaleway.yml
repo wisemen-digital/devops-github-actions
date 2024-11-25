@@ -15,6 +15,26 @@ on:
         description: List of rdb instances to roll out (folders), separated by commas
         required: false
         type: string
+      rdb-instance-volume-type:
+        description: Type of volume where data is stored (lssd, bssd, sbs_5k, sbs_15k)
+        required: false
+        default: 'sbs_5k'
+        type: string
+      rdb-instance-node-type:
+        description: "Type of node to use for the Database Instance (Ex: DB-PLAY2-PICO)"
+        required: false
+        default: 'DB-PLAY2-PICO'
+        type: string
+      rdb-instance-volume-size:
+          description: Volume size when volume_type is not lssd
+          required: false
+          default: '10GB'
+          type: string
+      rdb-instance-engine:
+          description: Database engine of the Database Instance (PostgreSQL, MySQL, ...)
+          required: false
+          default: 'PostgreSQL-15'
+          type: string
     secrets:
       SCALEWAY_ACCESS_KEY:
         description: Scaleway API key ID
@@ -56,4 +76,4 @@ jobs:
           secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
           default-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
           default-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
-          args: rdb instance create name=${{ matrix.deployment.path }} engine=PostgreSQL-15 user-name=admin generate-password=true node-type=DB-PLAY2-PICO
+          args: rdb instance create name=${{ matrix.deployment.path }} engine=${{ inputs.rdb-instance-engine }} user-name=admin generate-password=true node-type=${{ inputs.rdb-instance-node-type }} volume-type=${{ inputs.rdb-instance-volume-type }} volume-size=${{ inputs.rdb-instance-volume-size }}
