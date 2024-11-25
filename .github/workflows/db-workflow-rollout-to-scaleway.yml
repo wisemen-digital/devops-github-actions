@@ -51,6 +51,7 @@ jobs:
         uses: scaleway/action-scw@v0
         with:
           save-config: true
+          version: v2.24.0
           access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
           default-project-id: ${{ secrets.SCALEWAY_PROJECT_ID }}
