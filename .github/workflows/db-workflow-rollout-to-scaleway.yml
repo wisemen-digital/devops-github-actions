@@ -76,11 +76,16 @@ jobs:
           secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
           default-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
           default-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
-      - name: Perform database check
+      - name: Create database instance if not exists
         run: |
           id=$(scw rdb instance list name='${{ matrix.deployment.path }}' -o json | jq -r '.[] | select(.name == "${{ matrix.deployment.path }}") | .id')
           if [ -z "$id" ]; then
             scw rdb instance create name=${{ matrix.deployment.path }} engine=${{ inputs.rdb-instance-engine }} user-name=admin generate-password=true node-type=${{ inputs.rdb-instance-node-type }} volume-type=${{ inputs.rdb-instance-volume-type }} volume-size=${{ inputs.rdb-instance-volume-size }};
+
           else
             echo 'DB already exists'
           fi
+      - name: Wait for database to reach stable state
+        run: |
+          id=$(scw rdb instance list name='${{ matrix.deployment.path }}' -o json | jq -r '.[] | select(.name == "${{ matrix.deployment.path }}") | .id')
+          scw rdb instance wait $id
