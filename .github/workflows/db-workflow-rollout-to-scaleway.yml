@@ -54,6 +54,6 @@ jobs:
           version: v2.24.0
           access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
-          default-project-id: ${{ secrets.SCALEWAY_PROJECT_ID }}
-          default-organization-id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          default-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
+          default-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
           args: rdb instance create name=${{ matrix.deployment.path }} engine=PostgreSQL-15 user-name=admin generate-password=true node-type=DB-PLAY2-PICO
