@@ -71,8 +71,18 @@ jobs:
           if [ -z "$id" ]; then
             scw rdb instance create name=${{ matrix.deployment.path }} engine=$ENGINE user-name=admin is-ha-cluster="$IS_HA_CLUSTER" node-type=$NODE_TYPE volume-size=$VOLUME_SIZE volume-type=$VOLUME_TYPE --wait;
           else
-            scw rdb instance upgrade $id node-type=$NODE_TYPE --wait;
-            scw rdb instance upgrade $id volume-type=$VOLUME_TYPE --wait;
+            current=$(scw rdb instance get $id -o json | jq -r '.node_type')
+            if [ "$current" != $NODE_TYPE ]; then
+              scw rdb instance upgrade $id node-type=$NODE_TYPE --wait;
+            fi
+            current=$(scw rdb instance get $id -o json | jq '.volume.type')
+            if [ "$current" != $VOLUME_TYPE ]; then
+              scw rdb instance upgrade $id volume-type=$VOLUME_TYPE --wait;
+            fi
+            current=$(($(scw rdb instance get $id -o json | jq '.volume.size')/1000/1000/1000))"GB"
+            if [ "$current" != $VOLUME_SIZE ]; then
+              scw rdb instance upgrade $id volume-type=$(( $(echo $VOLUME_SIZE | sed 's/GB//') * 1000 * 1000 * 1000 )) --wait;
+            fi
             scw rdb instance upgrade $id volume-size=$VOLUME_SIZE --wait;
             if $IS_HA_CLUSTER == true; then
               scw rdb instance upgrade $id enable-ha=true --wait;
