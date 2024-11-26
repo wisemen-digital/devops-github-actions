@@ -72,21 +72,19 @@ jobs:
           id=$(scw rdb instance list name='${{ matrix.deployment.path }}' -o json | jq -r '.[] | select(.name == "${{ matrix.deployment.path }}") | .id')
           if [ -z "$id" ]; then
             scw rdb instance wait $id;
-            scw rdb instance create name=${{ matrix.deployment.path }} engine=$ENGINE user-name=admin is-ha-cluster=$IS_HA_CLUSTER node-type=$NODE_TYPE volume-size=$VOLUME_SIZE volume-type=$VOLUME_TYPE;
+            scw rdb instance create name=${{ matrix.deployment.path }} engine=$ENGINE user-name=admin is-ha-cluster=$IS_HA_CLUSTER node-type=$NODE_TYPE volume-size=$VOLUME_SIZE volume-type=$VOLUME_TYPE --wait;
           else
-            scw rdb instance wait $id;
-            scw rdb instance upgrade $id node-type=$NODE_TYPE volume-type=$VOLUME_TYPE volume-size=$VOLUME_SIZE;
+            scw rdb instance upgrade $id node-type=$NODE_TYPE --wait;
+            scw rdb instance upgrade $id volume-type=$VOLUME_TYPE --wait;
+            scw rdb instance upgrade $id volume-size=$VOLUME_SIZE --wait;
             if $IS_HA_CLUSTER == true; then
-              scw rdb instance upgrade $id enable-ha=true
+              scw rdb instance upgrade $id enable-ha=true --wait;
             fi
           fi
-      - name: Wait for database instance to reach stable state
-        run: |
-          id=$(scw rdb instance list name='${{ matrix.deployment.path }}' -o json | jq -r '.[] | select(.name == "${{ matrix.deployment.path }}") | .id')
-          scw rdb instance wait $id
-      - name: Create databases if not exists
+      - name: Create databases and users/privileges if not exists
         run: |
           for db in $DATABASES; do
             scw rdb database create instance-id=$id name=$db
             scw rdb user create instance-id=$id name=$db is-admin=false
+            scw rdb privilege set instance-id=$id database-name=$db user-name=$db permission=all
           done
