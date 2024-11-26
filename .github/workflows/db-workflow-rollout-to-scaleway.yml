@@ -71,7 +71,6 @@ jobs:
         run: |
           id=$(scw rdb instance list name='${{ matrix.deployment.path }}' -o json | jq -r '.[] | select(.name == "${{ matrix.deployment.path }}") | .id')
           if [ -z "$id" ]; then
-            scw rdb instance wait $id;
             scw rdb instance create name=${{ matrix.deployment.path }} engine=$ENGINE user-name=admin is-ha-cluster=$IS_HA_CLUSTER node-type=$NODE_TYPE volume-size=$VOLUME_SIZE volume-type=$VOLUME_TYPE --wait;
           else
             scw rdb instance upgrade $id node-type=$NODE_TYPE --wait;
