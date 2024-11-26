@@ -10,7 +10,6 @@ on:
     # Depends on the following vars
     # - SCALEWAY_REGION
     inputs:
-      # bucket info
       rdb-instance-deployments:
         description: List of rdb instances to roll out (folders), separated by commas
         required: false
@@ -76,7 +75,10 @@ jobs:
             scw rdb instance create name=${{ matrix.deployment.path }} engine=$ENGINE user-name=admin is-ha-cluster=$IS_HA_CLUSTER node-type=$NODE_TYPE volume-size=$VOLUME_SIZE volume-type=$VOLUME_TYPE;
           else
             scw rdb instance wait $id;
-            scw rdb instance upgrade $id enable-ha=$IS_HA_CLUSTER node-type=$NODE_TYPE volume-type=$VOLUME_TYPE volume-size=$VOLUME_SIZE;
+            scw rdb instance upgrade $id node-type=$NODE_TYPE volume-type=$VOLUME_TYPE volume-size=$VOLUME_SIZE;
+            if $IS_HA_CLUSTER == true; then
+              scw rdb instance upgrade $id enable-ha=true
+            fi
           fi
       - name: Wait for database instance to reach stable state
         run: |
