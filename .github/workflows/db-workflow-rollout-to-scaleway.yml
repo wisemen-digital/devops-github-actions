@@ -49,7 +49,9 @@ jobs:
       - name: Get config file
         uses: actions/checkout@v4
         with:
-          sparse-checkout: db/${{ matrix.deployment.path }}
+          sparse-checkout: |
+            db/${{ matrix.deployment.path }}
+            k8s/environments
       - name: Setup SCW CLI
         uses: scaleway/action-scw@v0
         with:
@@ -88,3 +90,10 @@ jobs:
             scw rdb user create instance-id=$id name=$db is-admin=false || true;
             scw rdb privilege set instance-id=$id database-name=$db user-name=$db permission=all;
           done
+      - name: Commit database url to env
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Automated Change: Add database URL's"
+          # commit_options: '--no-verify --signoff'
+          file_pattern: '*.properties'
+          repository: .
