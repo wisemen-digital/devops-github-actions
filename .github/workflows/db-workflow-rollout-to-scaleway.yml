@@ -59,19 +59,17 @@ jobs:
           secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
           default-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
           default-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
-      - name: Parse config file
-        run: |
-          DATABASES=$(yq '.databases[]' db/${{ matrix.deployment.path }}/config.yaml)
-          ENGINE=$(yq '.instance_configuration.engine' db/${{ matrix.deployment.path }}/config.yaml)
-          IS_HA_CLUSTER=$(yq '.instance_configuration.is_ha_cluster' db/${{ matrix.deployment.path }}/config.yaml)
-          NODE_TYPE=$(yq '.instance_configuration.node-type' db/${{ matrix.deployment.path }}/config.yaml)
-          VOLUME_SIZE=$(yq '.instance_configuration.volume-size' db/${{ matrix.deployment.path }}/config.yaml)
-          VOLUME_TYPE=$(yq '.instance_configuration.volume-type' db/${{ matrix.deployment.path }}/config.yaml)
       - name: Create/update database instance
         run: |
-          id=$(scw rdb instance list name='${{ matrix.deployment.path }}' -o json | jq -r '.[] | select(.name == "${{ matrix.deployment.path }}") | .id')
+          ENGINE=$(yq '.instance_configuration.engine' db/${{ matrix.deployment.path }}/config.yaml);
+          IS_HA_CLUSTER=$(yq '.instance_configuration.is_ha_cluster' db/${{ matrix.deployment.path }}/config.yaml);
+          NODE_TYPE=$(yq '.instance_configuration.node-type' db/${{ matrix.deployment.path }}/config.yaml);
+          VOLUME_SIZE=$(yq '.instance_configuration.volume-size' db/${{ matrix.deployment.path }}/config.yaml);
+          VOLUME_TYPE=$(yq '.instance_configuration.volume-type' db/${{ matrix.deployment.path }}/config.yaml);
+
+          id=$(scw rdb instance list name='${{ matrix.deployment.path }}' -o json | jq -r '.[] | select(.name == "${{ matrix.deployment.path }}") | .id');
           if [ -z "$id" ]; then
-            scw rdb instance create name=${{ matrix.deployment.path }} engine=$ENGINE user-name=admin is-ha-cluster=$IS_HA_CLUSTER node-type=$NODE_TYPE volume-size=$VOLUME_SIZE volume-type=$VOLUME_TYPE --wait;
+            scw rdb instance create name=${{ matrix.deployment.path }} engine=$ENGINE user-name=admin is-ha-cluster="$IS_HA_CLUSTER" node-type=$NODE_TYPE volume-size=$VOLUME_SIZE volume-type=$VOLUME_TYPE --wait;
           else
             scw rdb instance upgrade $id node-type=$NODE_TYPE --wait;
             scw rdb instance upgrade $id volume-type=$VOLUME_TYPE --wait;
@@ -82,6 +80,9 @@ jobs:
           fi
       - name: Create databases and users/privileges if not exists
         run: |
+          DATABASES=$(yq '.databases[]' db/${{ matrix.deployment.path }}/config.yaml);
+          id=$(scw rdb instance list name='${{ matrix.deployment.path }}' -o json | jq -r '.[] | select(.name == "${{ matrix.deployment.path }}") | .id');
+
           for db in $DATABASES; do
             scw rdb database create instance-id=$id name=$db
             scw rdb user create instance-id=$id name=$db is-admin=false
