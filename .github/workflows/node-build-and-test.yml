@@ -9,6 +9,10 @@ name: Build & Test Web
 on:
   workflow_call:
     inputs:
+      e2e-matrix:
+        description: Define number of parallel jobs for e2e testing
+        default: 1
+        type: number
       node-version:
         description: Node Version (such as 20.5)
         default: 'lts/*'
@@ -108,10 +112,16 @@ jobs:
       redis-image: ${{ steps.data.outputs.redis-image }}
       typesense-image: ${{ steps.data.outputs.typesense-image }}
       typesense-health: ${{ steps.data.outputs.typesense-health }}
+      parallel-tests: ${{ steps.data.outputs.parallel-tests }}
     steps:
       - name: Prepare Test Services
         id: data
         run: |
+          array=()
+          for ((i=0; i<${{ inputs.e2e-matrix }}; i++)); do
+            array+=($i)
+          done
+          echo "parallel-tests="[$(IFS=,; echo "${array[*]}")]"" >> "$GITHUB_OUTPUT"
           if [ "${{ inputs.test-nats-enabled }}" == "true" ]; then
             echo "nats-image=${{ inputs.test-nats-image }}" >> "$GITHUB_OUTPUT"
           else
@@ -124,16 +134,22 @@ jobs:
           fi
           if [ "${{ inputs.test-typesense-enabled }}" == "true" ]; then
             echo "typesense-image=${{ inputs.test-typesense-image }}" >> "$GITHUB_OUTPUT"
-            echo "typesense-health=curl http://127.0.0.1:8108/health" >> "$GITHUB_OUTPUT"
+            echo "typesense-health=apt-get update && \
+              apt-get install -y curl && \
+              curl http://127.0.0.1:8108/health" >> "$GITHUB_OUTPUT"
           else
             echo "typesense-image=nginx:stable-alpine-slim" >> "$GITHUB_OUTPUT"
             echo "typesense-health=exit 0" >> "$GITHUB_OUTPUT"
           fi
 
   # Then test
-  test:
-    name: Test Application
+  e2e-test:
+    name: e2e Testing Application
     needs: [lint, build, prep-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        parallel-tests: ${{ fromJson(needs.prep-test.outputs.parallel-tests) }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
     services:
@@ -188,6 +204,9 @@ jobs:
         with:
           name: app-build
       - name: Run tests
+        env:
+          CI_TOTAL: ${{ inputs.e2e-matrix }}
+          CI_INDEX: ${{ matrix.parallel-tests }}
         run: |
           touch '.env.test'
           if test -f 'dist/src/utils/test-setup/global-setup.js'; then
@@ -196,7 +215,7 @@ jobs:
           if test -f 'dist/test/setup/global-setup.js'; then
             node --env-file=.env.test dist/test/setup/global-setup.js
           fi
-          node --test --env-file=.env.test \
+          node split.js | xargs -I {} node --test --env-file=.env.test {} \
             --test-reporter=tap --test-reporter-destination=stdout \
             --test-reporter=junit --test-reporter-destination="test-report-junit.xml"
       - name: Publish test report
