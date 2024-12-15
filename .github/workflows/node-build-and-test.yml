@@ -124,9 +124,7 @@ jobs:
           fi
           if [ "${{ inputs.test-typesense-enabled }}" == "true" ]; then
             echo "typesense-image=${{ inputs.test-typesense-image }}" >> "$GITHUB_OUTPUT"
-            echo "typesense-health=apt-get update && \
-              apt-get install -y curl && \
-              curl http://127.0.0.1:8108/health" >> "$GITHUB_OUTPUT"
+            echo "typesense-health=curl http://127.0.0.1:8108/health" >> "$GITHUB_OUTPUT"
           else
             echo "typesense-image=nginx:stable-alpine-slim" >> "$GITHUB_OUTPUT"
             echo "typesense-health=exit 0" >> "$GITHUB_OUTPUT"
