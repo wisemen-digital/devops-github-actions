@@ -200,7 +200,9 @@ jobs:
           fi
           node --test --env-file=.env.test \
             --test-reporter=tap --test-reporter-destination=stdout \
-            --test-reporter=junit --test-reporter-destination="test-report-junit.xml"
+            --test-reporter=junit --test-reporter-destination="test-report-junit.xml" \
+            --experimental-test-isolation=none \
+            "**/*.test.js"
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
