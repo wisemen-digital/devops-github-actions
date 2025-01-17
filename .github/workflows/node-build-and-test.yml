@@ -192,17 +192,9 @@ jobs:
       - name: Run tests
         run: |
           touch '.env.test'
-          if test -f 'dist/src/utils/test-setup/global-setup.js'; then
-            node --env-file=.env.test dist/src/utils/test-setup/global-setup.js
-          fi
-          if test -f 'dist/test/setup/global-setup.js'; then
-            node --env-file=.env.test dist/test/setup/global-setup.js
-          fi
-          node --test --env-file=.env.test \
+          pnpm test:pipeline \
             --test-reporter=tap --test-reporter-destination=stdout \
             --test-reporter=junit --test-reporter-destination="test-report-junit.xml" \
-            --experimental-test-isolation=none \
-            "**/*.test.js"
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
