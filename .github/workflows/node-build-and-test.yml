@@ -192,9 +192,7 @@ jobs:
       - name: Run tests
         run: |
           touch '.env.test'
-          pnpm test:pipeline \
-            --test-reporter=tap --test-reporter-destination=stdout \
-            --test-reporter=junit --test-reporter-destination="test-report-junit.xml" \
+          NODE_OPTIONS='--test-reporter=tap --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-report-junit.xml' pnpm test:pipeline
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
