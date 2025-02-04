@@ -41,13 +41,14 @@ jobs:
 
             # Diff keys
             echo "Comparing $file to $(realpath --relative-to "." $base)…"
+            set +e
             keys_diff=`diff \
               <(yq -o=props -p=props 'keys | sort | .[]' $base) \
               <(yq -o=props -p=props 'keys | sort | .[]' $file)`
-            if [[ -z "$keys_diff" ]]; then continue; fi
+            set -e
 
             # Generate errors
-            echo $keys_diff | while read -r line; do
+            echo "$keys_diff" | while read -r line; do
               if [[ $line == "> "* ]]; then
                 echo "::error file=$file::Extraneous key ${line:2}, remove it (or add it to base)."
                 result=1
