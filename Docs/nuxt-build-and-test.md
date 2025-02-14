@@ -19,6 +19,7 @@ Note that the tests are run using the `vitest` tool.
 | Input | Description |
 | ----- | ----------- |
 | `node-version` | Node version to use, defaults to `lts` |
+| `build-output-path` | Build output path for artifact, defaults to `.output` |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
 
 ## Outputs
