@@ -1,5 +1,5 @@
 ---
-name: Build & Test Web
+name: Build & Test Node
 
 #
 # Build, test & lint a Node application
@@ -76,7 +76,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .eslintcache
-          key: eslint-${{ runner.os }}-
+          key: eslint-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             eslint-${{ runner.os }}-
       - name: Lint
