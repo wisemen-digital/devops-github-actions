@@ -31,4 +31,4 @@ jobs:
           path: .eslintcache
           key: eslint-main
       - name: Lint
-        run: pnpm lint --cache-location .eslintcache --cache-strategy content
+        run: pnpm lint --cache --cache-location .eslintcache --cache-strategy content
