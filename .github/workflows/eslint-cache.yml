@@ -29,6 +29,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .eslintcache
-          key: eslint-${{ runner.os }}-
+          key: eslint-main
       - name: Lint
         run: pnpm lint --cache-location .eslintcache --cache-strategy content
