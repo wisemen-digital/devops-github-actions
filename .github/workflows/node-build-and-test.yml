@@ -80,7 +80,7 @@ jobs:
           restore-keys: |
             eslint-main
       - name: Lint
-        run: pnpm lint --cache-location .eslintcache --cache-strategy content
+        run: pnpm lint --cache --cache-location .eslintcache --cache-strategy content
   build:
     name: Build Application
     runs-on: ubuntu-latest
