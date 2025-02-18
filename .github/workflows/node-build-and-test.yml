@@ -76,9 +76,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .eslintcache
-          key: eslint-${{ runner.os }}-${{ github.sha }}
+          key: eslint-${{ github.sha }}
           restore-keys: |
-            eslint-${{ runner.os }}-
+            eslint-main
       - name: Lint
         run: pnpm lint --cache-location .eslintcache --cache-strategy content
   build:
