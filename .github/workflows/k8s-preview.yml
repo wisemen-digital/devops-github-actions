@@ -1,0 +1,84 @@
+---
+name: Build & Test Infrastructure
+
+#
+# Generate previews for k8s changes
+#
+
+on:
+  workflow_call:
+    inputs:
+      vendor:
+        description: Vendor (such as `digitalocean` or `scaleway`)
+        type: string
+        required: true
+    secrets:
+      DIGITALOCEAN_API_TOKEN:
+        description: DigitalOcean API token
+        required: false
+      SCALEWAY_ACCESS_KEY:
+        description: Scaleway API key ID
+        required: false
+      SCALEWAY_SECRET_KEY:
+        description: Scaleway API key secret
+        required: false
+
+jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
+    steps:
+      - name: Generate Matrix
+        id: changed-paths-filter
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/k8s-rollout-filters.yaml
+
+  preview-k8s:
+    name: Diff with k8s
+    needs: [generate-matrix]
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    runs-on: ubuntu-latest
+    environment: ${{ matrix.deployment.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: k8s
+      - name: Validate config
+        run: |
+          kubectl kustomize ${{ matrix.deployment.path }} > /dev/null
+      - uses: wisemen-digital/devops-ga-k8s-setup@main
+        with:
+          vendor: ${{ inputs.vendor }}
+          cluster-id: ${{ vars.K8S_CLUSTER_ID }}
+          digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+          scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
+          scaleway-region: ${{ vars.SCALEWAY_REGION }}
+          scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Preview
+        id: preview
+        run: |
+          set +e
+          {
+            echo 'contents<<EOF'
+            kubectl diff -k ${{ matrix.deployment.path }}
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+          set -e
+      - name: Comment PR with preview
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          message: |
+            K8S preview for `${{ matrix.deployment.path }}`:
+            ```diff
+            ${{ steps.preview.outputs.contents }}
+            ```
+          comment-tag: preview-${{ matrix.deployment.path }}
