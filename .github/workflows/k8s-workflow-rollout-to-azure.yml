@@ -46,7 +46,7 @@ jobs:
     environment: ${{ matrix.deployment.environment }}
     steps:
       - name: Apply Configuration
-        uses: wisemen-digital/devops-ga-k8s-apply@feature/add-azure
+        uses: wisemen-digital/devops-ga-k8s-apply
         with:
           vendor: azure
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
