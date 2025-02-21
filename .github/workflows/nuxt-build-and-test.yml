@@ -13,6 +13,10 @@ on:
         description: Node Version (such as 20.5)
         default: 'lts/*'
         type: string
+      build-output-path:
+        description: Build output path for artifact, defaults to `.output`
+        default: '.output'
+        type: string
       test-timeout:
         description: Time (in minutes) after wich the test job will timeout
         default: 5
@@ -66,8 +70,7 @@ jobs:
         with:
           name: app-build
           include-hidden-files: true
-          path: |
-            .output
+          path: ${{ inputs.build-output-path }}
 
   # Then test
   test:
