@@ -17,7 +17,7 @@ on:
         required: true
         type: string
     secrets:
-      AZURE_CREDS:
+      AZURE_CREDENTIALS:
         description: Json string for login with an Azure service principal
         required: true
 
@@ -51,5 +51,5 @@ jobs:
           vendor: azure
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
           config-path: ${{ matrix.deployment.path }}
-          azure-creds: ${{ secrets.AZURE_CREDS }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
           azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
