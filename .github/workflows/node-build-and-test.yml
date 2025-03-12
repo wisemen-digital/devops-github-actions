@@ -1,5 +1,5 @@
 ---
-name: Build & Test Web
+name: Build & Test Node
 
 #
 # Build, test & lint a Node application
@@ -17,6 +17,14 @@ on:
         description: Time (in minutes) after wich the test job will timeout
         default: 5
         type: number
+      test-mysql-enabled:
+        description: Enable MYSQL test service (defaults to false)
+        default: false
+        type: boolean
+      test-mysql-image:
+        description: Image to use for MySQL test DB (defaults to normal image)
+        default: 'mysql:8'
+        type: string
       test-nats-enabled:
         description: Enable NATS test service (defaults to false)
         default: false
@@ -72,8 +80,15 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Restore ESLint cache
+        uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: ${{ runner.os }}-eslint-${{ hashFiles('eslint.config.js', '.eslintrc.json') }}
+          restore-keys: |
+            ${{ runner.os }}-eslint
       - name: Lint
-        run: pnpm lint
+        run: pnpm lint --cache --cache-location .eslintcache --cache-strategy content
   build:
     name: Build Application
     runs-on: ubuntu-latest
@@ -104,6 +119,7 @@ jobs:
     name: Prepare Test Services
     runs-on: ubuntu-latest
     outputs:
+      mysql-image: ${{ steps.data.outputs.mysql-image }}
       nats-image: ${{ steps.data.outputs.nats-image }}
       redis-image: ${{ steps.data.outputs.redis-image }}
       typesense-image: ${{ steps.data.outputs.typesense-image }}
@@ -112,6 +128,11 @@ jobs:
       - name: Prepare Test Services
         id: data
         run: |
+          if [ "${{ inputs.test-mysql-enabled }}" == "true" ]; then
+            echo "mysql-image=${{ inputs.test-mysql-image }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "mysql-image=" >> "$GITHUB_OUTPUT"
+          fi
           if [ "${{ inputs.test-nats-enabled }}" == "true" ]; then
             echo "nats-image=${{ inputs.test-nats-image }}" >> "$GITHUB_OUTPUT"
           else
@@ -139,6 +160,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
     services:
+      mysql:
+        image: ${{ needs.prep-test.outputs.mysql-image }}
+        env:
+          MYSQL_DATABASE: testdb
+          MYSQL_USER: 'mysql'
+          MYSQL_PASSWORD: 'password'
+          MYSQL_ROOT_PASSWORD: 'rootpassword'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       nats:
         image: ${{ needs.prep-test.outputs.nats-image }}
         ports:
