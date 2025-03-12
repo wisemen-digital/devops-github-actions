@@ -29,7 +29,7 @@ on:
         type: string
         required: false
     secrets:
-      AZURE_CREDS:
+      AZURE_CREDENTIALS:
         description: Json string for login with an Azure service principal
         required: true
       AZURE_CR_USER:
@@ -95,12 +95,12 @@ jobs:
           platforms: ${{ vars.CONTAINER_PLATFORMS }}
           target: ${{ matrix.variant.path }}
       - name: Rollout on cluster
-        uses: wisemen-digital/devops-ga-k8s-rollout
+        uses: wisemen-digital/devops-ga-k8s-rollout@main
         with:
           vendor: azure
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
           rollout-deployments: ${{ vars.K8S_DEPLOYMENTS }}
           rollout-labels: ${{ env.rollout_labels }}
           rollout-namespace: ${{ vars.K8S_NAMESPACE }}
-          azure-creds: ${{ secrets.AZURE_CREDS }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
           azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
