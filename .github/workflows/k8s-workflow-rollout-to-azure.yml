@@ -1,0 +1,55 @@
+---
+name: Rollout deployments (Azure)
+
+#
+# Check what's changed (via filters, or provide your own list) and roll it out.
+#
+
+on:
+  workflow_call:
+    # Depends on the following vars
+    # - AZURE_RESOURCE_GROUP
+    # - K8S_CLUSTER_ID
+    inputs:
+      # Cluster info
+      cluster-deployments:
+        description: List of deployments to roll out (folders), separated by commas
+        required: true
+        type: string
+    secrets:
+      AZURE_CREDS:
+        description: Json string for login with an Azure service principal
+        required: true
+
+jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
+    steps:
+      - name: Generate Matrix
+        id: changed-paths-filter
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/k8s-rollout-filters.yaml
+          changes-override: ${{ inputs.cluster-deployments }}
+
+  rollout-to-k8s:
+    name: Rollout to k8s
+    needs: [generate-matrix]
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    runs-on: ubuntu-latest
+    environment: ${{ matrix.deployment.environment }}
+    steps:
+      - name: Apply Configuration
+        uses: wisemen-digital/devops-ga-k8s-apply
+        with:
+          vendor: azure
+          cluster-id: ${{ vars.K8S_CLUSTER_ID }}
+          config-path: ${{ matrix.deployment.path }}
+          azure-creds: ${{ secrets.AZURE_CREDS }}
+          azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
