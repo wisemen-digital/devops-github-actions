@@ -136,12 +136,12 @@ jobs:
           if [ "${{ inputs.test-nats-enabled }}" == "true" ]; then
             echo "nats-image=${{ inputs.test-nats-image }}" >> "$GITHUB_OUTPUT"
           else
-            echo "nats-image=nginx:stable-alpine-slim" >> "$GITHUB_OUTPUT"
+            echo "nats-image=" >> "$GITHUB_OUTPUT"
           fi
           if [ "${{ inputs.test-redis-enabled }}" == "true" ]; then
             echo "redis-image=${{ inputs.test-redis-image }}" >> "$GITHUB_OUTPUT"
           else
-            echo "redis-image=nginx:stable-alpine-slim" >> "$GITHUB_OUTPUT"
+            echo "redis-image=" >> "$GITHUB_OUTPUT"
           fi
           if [ "${{ inputs.test-typesense-enabled }}" == "true" ]; then
             echo "typesense-image=${{ inputs.test-typesense-image }}" >> "$GITHUB_OUTPUT"
@@ -149,8 +149,7 @@ jobs:
               apt-get install -y curl && \
               curl http://127.0.0.1:8108/health" >> "$GITHUB_OUTPUT"
           else
-            echo "typesense-image=nginx:stable-alpine-slim" >> "$GITHUB_OUTPUT"
-            echo "typesense-health=exit 0" >> "$GITHUB_OUTPUT"
+            echo "typesense-image=" >> "$GITHUB_OUTPUT"
           fi
 
   # Then test
