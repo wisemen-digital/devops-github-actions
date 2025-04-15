@@ -102,6 +102,7 @@ jobs:
           if [ "$RUNNER_DEBUG" != '1' ]; then
             TEST_REPORTER='--reporter=junit --outputFile=test-report-junit.xml'
           fi
+          pnpm nuxi prepare
           pnpm vitest --run $TEST_REPORTER
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
