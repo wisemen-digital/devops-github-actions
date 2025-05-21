@@ -1,0 +1,35 @@
+---
+name: Generate Flutter build runner code
+
+#
+# Run flutter build runner code generation and upload artifact of generated code
+# Note: will create artifact of generated code.
+#
+
+on:
+  workflow_call:
+    inputs:
+      artifact_name:
+        required: true
+        description: Package name (artifacts)
+        type: string
+      working_directory:
+        required: true
+        default: "."
+        description: The working directory for this workflow
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run build runner
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+        run: dart pub run build_runner build -d
+
+      - name: Upload generated code
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.working_directory == './' && 'lib' || inputs.working_directory }}  
