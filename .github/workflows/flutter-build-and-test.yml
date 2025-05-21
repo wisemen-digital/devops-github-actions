@@ -1,0 +1,121 @@
+---
+name: Format, Build & Test Flutter app
+
+#
+# Format, build, analyze & test a Flutter application
+# Note: will create artifacts for generated code and coverage reports.
+#
+
+on:
+  workflow_call:
+    inputs:
+        build-timeout:
+          description: Time (in minutes) after which the test job will timeout
+          default: 5
+          type: number
+        test-timeout:
+          description: Time (in minutes) after which the test job will timeout
+          default: 5
+          type: number
+        test-coverage:
+          description: Minimum test coverage required (defaults to 0)
+          default: 0
+          type: number
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Run flutter pub get
+        run: flutter pub get
+      - name: Verify formatting
+        run: dart format . --set-exit-if-changed
+      - name: Generate intl
+        run: |
+          dart pub global activate intl_utils
+          dart pub global run intl_utils:generate
+      - name: Upload generated code
+        uses: actions/upload-artifact@v4
+        with:
+          name: intl
+          path: lib/generated
+
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
+    steps:
+      - name: Generate Matrix
+        id: changed-paths-filter
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/package-filters.yaml
+
+  generate-code:
+    needs: [generate-matrix, verify-formatting]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Run flutter pub get
+        run: flutter pub get
+      - name: Generate ${{ matrix.deployment.path }} code
+        timeout-minutes: ${{ inputs.build-timeout }}
+        uses: wisemen-digital/devops-github-actions/.github/workflows/flutter-generate-code.yml@main
+        with:
+          artifact_name: ${{ matrix.deployment.path == '.' && 'app-lib' || matrix.deployment.path }}
+          working_directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: [generate-code]
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: merged-artifacts
+          delete-merged: true
+          separate-directories: true
+
+  test: 
+    needs: [generate-matrix, generate-code, merge]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Run flutter pub get
+        run: flutter pub get      
+      - name: Test ${{ matrix.deployment.environment }}
+        uses: wisemen-digital/devops-github-actions/.github/workflows/flutter-test-package.yml@main
+        timeout-minutes: ${{ inputs.test-timeout }}
+        with:
+          package_name: ${{ matrix.deployment.path }}
+          working_directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
+          min_coverage: ${{ inputs.test-coverage }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
