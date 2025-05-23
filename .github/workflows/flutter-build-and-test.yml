@@ -91,7 +91,7 @@ jobs:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
     if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
     env:
-      working-directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
+      WORKING_DIRECTORY: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Flutter
@@ -103,11 +103,11 @@ jobs:
         run: flutter pub get
       - name: Analyze project source
         shell: bash
-        working-directory: $working-directory
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         run: dart analyze --fatal-infos --fatal-warnings
       - name: Run Flutter WiseClient tests
         shell: bash
-        working-directory: $working-directory
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         run: flutter test --no-pub --coverage
       - name: Setup LCOV
         uses: hrishikesh-kadam/setup-lcov@v1
@@ -115,8 +115,8 @@ jobs:
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v4
         with:
-          coverage-files: $working-directory/coverage/lcov.info
+          coverage-files: coverage/lcov.info
           minimum-coverage: ${{ inputs.test-coverage }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          working-directory: $working-directory
+          working-directory: ${{ env.WORKING_DIRECTORY }}
           artifact-name: ${{ matrix.deployment.path }}-coverage
