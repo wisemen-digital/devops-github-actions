@@ -65,6 +65,7 @@ jobs:
   generate-code:
     needs: [generate-matrix, verify-formatting]
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.build-timeout }}
     strategy:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
@@ -78,30 +79,19 @@ jobs:
       - name: Run flutter pub get
         run: flutter pub get
       - name: Generate ${{ matrix.deployment.path }} code
-        timeout-minutes: ${{ inputs.build-timeout }}
-        uses: wisemen-digital/devops-github-actions/.github/workflows/flutter-generate-code.yml@main
-        with:
-          artifact_name: ${{ matrix.deployment.path == '.' && 'app-lib' || matrix.deployment.path }}
-          working_directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
-
-  merge:
-    runs-on: ubuntu-latest
-    needs: [generate-code]
-    steps:
-      - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
-        with:
-          name: merged-artifacts
-          delete-merged: true
-          separate-directories: true
+        working-directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
+        run: dart pub run build_runner build -d
 
   test: 
-    needs: [generate-matrix, generate-code, merge]
+    needs: [generate-matrix, generate-code]
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.test-timeout }}
     strategy:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
     if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    env:
+      working-directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Flutter
@@ -110,12 +100,23 @@ jobs:
           channel: stable
           cache: true
       - name: Run flutter pub get
-        run: flutter pub get      
-      - name: Test ${{ matrix.deployment.environment }}
-        uses: wisemen-digital/devops-github-actions/.github/workflows/flutter-test-package.yml@main
-        timeout-minutes: ${{ inputs.test-timeout }}
+        run: flutter pub get
+      - name: Analyze project source
+        shell: bash
+        working-directory: $working-directory
+        run: dart analyze --fatal-infos --fatal-warnings
+      - name: Run Flutter WiseClient tests
+        shell: bash
+        working-directory: $working-directory
+        run: flutter test --no-pub --coverage
+      - name: Setup LCOV
+        uses: hrishikesh-kadam/setup-lcov@v1
+
+      - name: Report code coverage
+        uses: zgosalvez/github-actions-report-lcov@v4
         with:
-          package_name: ${{ matrix.deployment.path }}
-          working_directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
-          min_coverage: ${{ inputs.test-coverage }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          coverage-files: $working-directory/coverage/lcov.info
+          minimum-coverage: ${{ inputs.test-coverage }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: $working-directory
+          artifact-name: ${{ matrix.deployment.path }}-coverage
