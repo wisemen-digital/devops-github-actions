@@ -69,8 +69,6 @@ jobs:
     strategy:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
-    env:
-      WORKING_DIRECTORY: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Flutter
@@ -81,13 +79,13 @@ jobs:
       - name: Run flutter pub get
         run: flutter pub get
       - name: Generate ${{ matrix.deployment.path }} code
-        working-directory: ${{ env.WORKING_DIRECTORY }}
+        working-directory:  ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
         run: dart pub run build_runner build -d
       - name: Upload generated code
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.deployment.path == '.' && 'app-lib' || matrix.deployment.path }}
-          path: ${{ env.WORKING_DIRECTORY }}
+          path: ${{ matrix.deployment.path == '.' && 'lib' || matrix.deployment.path }}
 
   merge:
     runs-on: ubuntu-latest
