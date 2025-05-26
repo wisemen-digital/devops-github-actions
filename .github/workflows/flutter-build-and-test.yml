@@ -101,7 +101,7 @@ jobs:
           separate-directories: true
 
   test: 
-    needs: [generate-matrix, generate-code]
+    needs: [generate-matrix, generate-code, merge]
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
     strategy:
