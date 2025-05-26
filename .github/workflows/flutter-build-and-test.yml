@@ -9,18 +9,18 @@ name: Format, Build & Test Flutter app
 on:
   workflow_call:
     inputs:
-        build-timeout:
-          description: Time (in minutes) after which the test job will timeout
-          default: 5
-          type: number
-        test-timeout:
-          description: Time (in minutes) after which the test job will timeout
-          default: 5
-          type: number
-        test-coverage:
-          description: Minimum test coverage required (defaults to 0)
-          default: 0
-          type: number
+      build-timeout:
+        description: Time (in minutes) after which the test job will timeout
+        default: 5
+        type: number
+      test-timeout:
+        description: Time (in minutes) after which the test job will timeout
+        default: 5
+        type: number
+      test-coverage:
+        description: Minimum test coverage required (defaults to 0)
+        default: 0
+        type: number
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -79,7 +79,7 @@ jobs:
       - name: Run flutter pub get
         run: flutter pub get
       - name: Generate ${{ matrix.deployment.path }} code
-        working-directory:  ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
+        working-directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
         run: dart pub run build_runner build -d
       - name: Upload generated code
         uses: actions/upload-artifact@v4
@@ -98,7 +98,7 @@ jobs:
           delete-merged: true
           separate-directories: true
 
-  test: 
+  test:
     needs: [generate-matrix, generate-code, merge]
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
