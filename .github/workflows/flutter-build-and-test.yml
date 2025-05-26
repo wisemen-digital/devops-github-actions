@@ -85,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.deployment.path == '.' && 'app-lib' || matrix.deployment.path }}
-          path: ${{ matrix.deployment.path == '.' && 'lib' || matrix.deployment.path }}
+          path: ${{ matrix.deployment.path == '.' && 'lib' || format('packages/{0}', matrix.deployment.path) }}
 
   merge:
     runs-on: ubuntu-latest
