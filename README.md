@@ -19,6 +19,7 @@ Verification (PR check):
 | [node-build-and-test.yml](Docs/node-build-and-test.md) | Lint, build & test a Node app |
 | [nuxt-build-and-test.yml](Docs/nuxt-build-and-test.md) | Lint, build & test a Nuxt app |
 | [web-build-and-test.yml](Docs/web-build-and-test.md) | Lint, build & test a Web app |
+| [flutter-build-and-test.yml](Docs/web-build-and-test.md) | Lint, build, analyze & test a Flutter app |
 
 ## Infra Workflows
 
