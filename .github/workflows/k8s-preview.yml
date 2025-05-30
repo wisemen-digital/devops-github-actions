@@ -23,6 +23,11 @@ jobs:
         uses: wisemen-digital/devops-ga-changed-paths-filter@main
         with:
           filter-file: .github/k8s-rollout-filters.yaml
+      - name: Ensure access to private repositories
+        shell: bash
+        run: |
+          AUTH="x-access-token:${{ secrets.K8S_MODULES_SECRET }}"
+          git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
       - name: Generate diffs
         id: preview
         run: |
