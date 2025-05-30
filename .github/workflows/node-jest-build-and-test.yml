@@ -115,6 +115,7 @@ jobs:
           path: |
             dist
             _build
+          retention-days: 3
   prep-test:
     name: Prepare Test Services
     runs-on: ubuntu-latest

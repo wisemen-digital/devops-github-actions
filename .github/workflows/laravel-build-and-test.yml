@@ -72,6 +72,7 @@ jobs:
         with:
           name: app-build
           path: dist.tar.gz
+          retention-days: 7
   test:
     name: Test Application
     needs: build

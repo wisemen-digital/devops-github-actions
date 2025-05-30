@@ -71,6 +71,7 @@ jobs:
           name: app-build
           include-hidden-files: true
           path: ${{ inputs.build-output-path }}
+          retention-days: 3
 
   # Then test
   test:
