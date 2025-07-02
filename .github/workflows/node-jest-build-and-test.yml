@@ -124,7 +124,6 @@ jobs:
       nats-image: ${{ steps.data.outputs.nats-image }}
       redis-image: ${{ steps.data.outputs.redis-image }}
       typesense-image: ${{ steps.data.outputs.typesense-image }}
-      typesense-health: ${{ steps.data.outputs.typesense-health }}
     steps:
       - name: Prepare Test Services
         id: data
@@ -146,9 +145,6 @@ jobs:
           fi
           if [ "${{ inputs.test-typesense-enabled }}" == "true" ]; then
             echo "typesense-image=${{ inputs.test-typesense-image }}" >> "$GITHUB_OUTPUT"
-            echo "typesense-health=apt-get update && \
-              apt-get install -y curl && \
-              curl http://127.0.0.1:8108/health" >> "$GITHUB_OUTPUT"
           else
             echo "typesense-image=" >> "$GITHUB_OUTPUT"
           fi
@@ -204,7 +200,7 @@ jobs:
           TYPESENSE_DATA_DIR: '/home'
           TYPESENSE_API_KEY: 'api_key'
         options: >-
-          --health-cmd "${{ needs.prep-test.outputs.typesense-health }}"
+          --health-cmd="bash -c 'exec 3<>/dev/tcp/localhost/8108 && printf \"GET /health HTTP/1.1\r\nConnection: close\r\n\r\n\" >&3 && head -n1 <&3 | grep 200 && exec 3>&-'"
           --health-interval 10s
           --health-timeout 10s
           --health-retries 5
