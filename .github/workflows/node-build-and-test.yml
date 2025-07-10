@@ -89,7 +89,12 @@ jobs:
             ${{ runner.os }}-eslint
       - name: Lint
         run: pnpm lint --cache --cache-location .eslintcache --cache-strategy content
-  build:
+      - name: Check for leaks
+        id: setup
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/check-leaks@main
+        with:
+          github-access-token: ${{ github.token }}
+   build:
     name: Build Application
     runs-on: ubuntu-latest
     timeout-minutes: 5
