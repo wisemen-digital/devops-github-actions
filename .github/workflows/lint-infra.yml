@@ -63,12 +63,13 @@ jobs:
   xml-lint:
     name: Lint XML
     runs-on: ubuntu-latest
+    container: alpine:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xmllint
         if: ${{ hashFiles('s3/**/*.xml') != '' }}
-        run: sudo apt-get -qq install -y libxml2-utils
+        run: apk add --no-cache libxml2-utils
       - name: Configure XML reporter
         if: ${{ hashFiles('s3/**/*.xml') != '' }}
         uses: korelstar/xmllint-problem-matcher@v1
