@@ -70,15 +70,33 @@ jobs:
       - name: Install xmllint
         if: ${{ hashFiles('s3/**/*.xml') != '' }}
         run: apk add --no-cache libxml2-utils
-      - name: Configure XML reporter
-        if: ${{ hashFiles('s3/**/*.xml') != '' }}
-        uses: korelstar/xmllint-problem-matcher@v1
       - name: Validate S3 CORS configurations
         if: ${{ hashFiles('s3/**/cors.xml') != '' }}
         run: |
+          echo '${{ env.aws-xmllint-matcher-json }}' > "aws-xmllint-matcher.json"
           echo '${{ env.aws-xsd }}' > "aws.xsd"
+          
+          echo '::add-matcher::aws-xmllint-matcher.json'
           find s3 -name "cors.xml" -print0 | xargs -0 xmllint --schema aws.xsd --noout
+          echo '::remove-matcher owner=aws-xmllint::'
         env:
+          aws-xmllint-matcher-json: >-
+            {
+              "problemMatcher": [
+                {
+                  "owner": "aws-xmllint",
+                  "pattern": [
+                    {
+                      "regexp": "^(.+):(\\d+):\\s+(.+)\\s+:\\s+(.+)$",
+                      "file": 1,
+                      "line": 2,
+                      "code": 3,
+                      "message": 4
+                    }
+                  ]
+                }
+              ]
+            }
           aws-xsd: >-
             <?xml version="1.0" encoding="UTF-8"?>
             <xsd:schema
