@@ -19,6 +19,9 @@ on:
         required: true
         type: string
     secrets:
+      K8S_MODULES_SECRET:
+        description: Token to access github modules repositories
+        required: true
       SCALEWAY_ACCESS_KEY:
         description: Scaleway API key ID
         required: true
@@ -56,6 +59,7 @@ jobs:
           vendor: scaleway
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
           config-path: ${{ matrix.deployment.path }}
+          github-access-token: ${{ secrets.K8S_MODULES_SECRET }}
           scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
           scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
           scaleway-region: ${{ vars.SCALEWAY_REGION }}

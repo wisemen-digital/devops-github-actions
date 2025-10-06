@@ -19,6 +19,9 @@ on:
       DIGITALOCEAN_API_TOKEN:
         description: DigitalOcean API token
         required: true
+      K8S_MODULES_SECRET:
+        description: Token to access github modules repositories
+        required: true
 
 jobs:
   generate-matrix:
@@ -50,4 +53,5 @@ jobs:
           vendor: digitalocean
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
           config-path: ${{ matrix.deployment.path }}
+          github-access-token: ${{ secrets.K8S_MODULES_SECRET }}
           digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
