@@ -17,6 +17,14 @@ on:
         description: Time (in minutes) after wich the test job will timeout
         default: 5
         type: number
+      test-mssql-enabled:
+        description: Enable MSSQL test service (defaults to false)
+        default: false
+        type: boolean
+      test-mssql-image:
+        description: Image to use for MSSQL test DB (defaults to normal image)
+        default: 'mcr.microsoft.com/mssql/server:2022-latest'
+        type: string
       test-mysql-enabled:
         description: Enable MYSQL test service (defaults to false)
         default: false
@@ -120,6 +128,7 @@ jobs:
     name: Prepare Test Services
     runs-on: ubuntu-latest
     outputs:
+      mssql-image: ${{ steps.data.outputs.mssql-image }}
       mysql-image: ${{ steps.data.outputs.mysql-image }}
       nats-image: ${{ steps.data.outputs.nats-image }}
       redis-image: ${{ steps.data.outputs.redis-image }}
@@ -128,6 +137,11 @@ jobs:
       - name: Prepare Test Services
         id: data
         run: |
+          if [ "${{ inputs.test-mssql-enabled }}" == "true" ]; then
+            echo "mssql-image=${{ inputs.test-mssql-image }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "mssql-image=" >> "$GITHUB_OUTPUT"
+          fi
           if [ "${{ inputs.test-mysql-enabled }}" == "true" ]; then
             echo "mysql-image=${{ inputs.test-mysql-image }}" >> "$GITHUB_OUTPUT"
           else
@@ -156,6 +170,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
     services:
+      mssql:
+        if: ${{ inputs.test-mssql-enabled }}
+        image: ${{ inputs.test-mssql-image }}
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_DB: 'test_db'
+          SA_PASSWORD: 'Password123!'
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "bash -c 'echo > /dev/tcp/localhost/1433'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       mysql:
         image: ${{ needs.prep-test.outputs.mysql-image }}
         env:
