@@ -171,8 +171,7 @@ jobs:
     timeout-minutes: ${{ inputs.test-timeout }}
     services:
       mssql:
-        if: ${{ inputs.test-mssql-enabled }}
-        image: ${{ inputs.test-mssql-image }}
+        image: ${{ needs.prep-test.outputs.mssql-image }}
         env:
           ACCEPT_EULA: 'Y'
           MSSQL_DB: 'test_db'
