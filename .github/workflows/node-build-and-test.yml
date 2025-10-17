@@ -175,7 +175,7 @@ jobs:
         env:
           ACCEPT_EULA: 'Y'
           MSSQL_DB: 'test_db'
-          SA_PASSWORD: 'Password123!'
+          MSSQL_SA_PASSWORD: "Password123!"
         ports:
           - 1433:1433
         options: >-
