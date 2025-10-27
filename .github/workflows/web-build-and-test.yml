@@ -105,8 +105,12 @@ jobs:
           fi
   unit-test:
     name: Test Application
-    needs: [lint, typecheck]
+    needs: [build]
+    if: needs.build.outputs.playwright-configured == 'true'
     runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.test-playwright-image }}
+      options: --user 1001
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
       - name: Checkout
