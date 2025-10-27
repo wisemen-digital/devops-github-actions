@@ -105,7 +105,7 @@ jobs:
           fi
   unit-test:
     name: Test Application
-    needs: [lint, typecheck]
+    needs: [build]
     if: needs.build.outputs.playwright-configured == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
