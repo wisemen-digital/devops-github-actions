@@ -121,8 +121,8 @@ jobs:
         with:
           name: app-build
           path: |
-            dist
-            _build
+            **/dist
+            **/_build
           retention-days: 3
   prep-test:
     name: Prepare Test Services
@@ -255,5 +255,5 @@ jobs:
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
         with:
-          report_paths: test-report-junit.xml
+          report_paths: '**/test-report-junit.xml'
           require_tests: true
