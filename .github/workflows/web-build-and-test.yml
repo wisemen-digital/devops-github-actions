@@ -144,7 +144,6 @@ jobs:
         with:
           report_paths: test-report-junit.xml
           require_passed_tests: true
-
   # Finally run E2E tests if available
   e2e-test:
     name: Test Application (E2E)
@@ -182,3 +181,10 @@ jobs:
           fi
       - name: Run tests
         run: pnpm exec playwright test --reporter=github
+      - name: Report tests
+        run: pnpm exec nyc report --reporter=json-summary --report-dir=coverage-playwright
+      - name: Archive playwright coverage results
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-coverage-report
+          path: coverage-playwright/coverage-summary.json
