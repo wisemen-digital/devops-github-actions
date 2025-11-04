@@ -93,20 +93,20 @@ jobs:
         with:
           name: app-build
           path: |
-            dist
+            **/dist
           retention-days: 3
-      - name: Prep. Playwright if needed
-        id: prep-playwright
-        run: |
-          if test -f 'playwright.config.ts'; then
-            echo "playwright-configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "playwright-configured=false" >> "$GITHUB_OUTPUT"
-          fi
+      # - name: Prep. Playwright if needed
+      #   id: prep-playwright
+      #   run: |
+      #     if test -f 'playwright.config.ts'; then
+      #       echo "playwright-configured=true" >> "$GITHUB_OUTPUT"
+      #     else
+      #       echo "playwright-configured=false" >> "$GITHUB_OUTPUT"
+      #     fi
   unit-test:
     name: Test Application
     needs: [build]
-    if: needs.build.outputs.playwright-configured == 'true'
+    # if: needs.build.outputs.playwright-configured == 'true'
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.test-playwright-image }}
@@ -142,14 +142,14 @@ jobs:
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
         with:
-          report_paths: test-report-junit.xml
+          report_paths: '**/test-report-junit.xml'
           require_passed_tests: true
 
   # Finally run E2E tests if available
   e2e-test:
     name: Test Application (E2E)
     needs: [build]
-    if: needs.build.outputs.playwright-configured == 'true'
+    # if: needs.build.outputs.playwright-configured == 'true'
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.test-playwright-image }}
