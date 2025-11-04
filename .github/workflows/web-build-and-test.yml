@@ -133,13 +133,13 @@ jobs:
           fi
       - name: Run tests
         run: |
-          pnpm vitest --coverage --reporter=json --outputFile=coverage-summary.json
+          pnpm vitest --coverage --reporter=json --outputFile=vitest-coverage.json
         continue-on-error: true
       - name: Archive playwright coverage results
         uses: actions/upload-artifact@v4
         with:
           name: vitest-coverage-report
-          path: coverage/coverage-summary.json
+          path: coverage/vitest-coverage.json
   # Finally run E2E tests if available
   e2e-test:
     name: Test Application (E2E)
@@ -176,9 +176,7 @@ jobs:
             sed -i -e 's/ENVIRONMENT=.*/ENVIRONMENT=ci-test-e2e/g' '.env'
           fi
       - name: Run tests
-        run: pnpm exec playwright test --reporter=github
-      - name: Report tests
-        run: pnpm exec nyc report --reporter=json-summary --report-dir=coverage-playwright
+        run: npx playwright test && nyc report --reporter=json-summary --report-dir=coverage-playwright
       - name: Archive playwright coverage results
         uses: actions/upload-artifact@v4
         with:
