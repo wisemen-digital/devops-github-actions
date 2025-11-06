@@ -13,6 +13,10 @@ on:
         description: Node Version (such as 20.5)
         default: 'lts/*'
         type: string
+      directories:
+        description: Directories to lint/build (comma separated)
+        default: '.'
+        type: string
       test-timeout:
         description: Time (in minutes) after wich the test job will timeout
         default: 5
@@ -45,7 +49,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint
-        run: pnpm lint
+        run: |
+          FILTERS_ARGUMENTS="${{ inputs.directories }}"
+          if [ -n "$FILTERS_ARGUMENTS" ]; then
+            PNPM_FILTERS="--filter ${FILTERS_ARGUMENTS//,/ --filter }"
+            pnpm $PNPM_FILTERS lint
+          else
+            pnpm lint
+          fi
+        shell: bash
   typecheck:
     name: Typecheck Application
     runs-on: ubuntu-latest
@@ -86,7 +98,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Run build
-        run: pnpm build:web
+        run: |
+          FILTERS_ARGUMENTS="${{ inputs.directories }}"
+          if [ -n "$FILTERS_ARGUMENTS" ]; then
+            PNPM_FILTERS="--filter ${FILTERS_ARGUMENTS//,/ --filter }"
+            pnpm $PNPM_FILTERS build
+          else
+            pnpm build
+          fi
+        shell: bash
       # Archive
       - name: Store archive
         uses: actions/upload-artifact@v4
