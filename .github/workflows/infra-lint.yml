@@ -13,8 +13,6 @@ jobs:
     name: Lint YAML
     runs-on: ubuntu-latest
     steps:
-      - name: Deprecation message
-        run: echo "::warning file=.github/workflows/lint.yml,line=12::Deprecated workflow, switch to new infra workflow path.""
       - name: Lint
         uses: wisemen-digital/devops-ga-lint-yaml@main
 

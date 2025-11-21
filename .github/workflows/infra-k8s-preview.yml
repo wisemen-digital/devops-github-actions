@@ -7,19 +7,12 @@ name: Build & Test Infrastructure
 
 on:
   workflow_call:
-    inputs:
-      vendor:
-        description: Vendor (such as `digitalocean` or `scaleway`)
-        type: string
-        required: false
 
 jobs:
   preview-k8s:
     name: Diff with k8s
     runs-on: ubuntu-latest
     steps:
-      - name: Deprecation message
-        run: echo "::warning file=.github/workflows/pullrequest-check.yml,line=17::Deprecated workflow, switch to new infra workflow path.""
       - name: Generate changed paths
         id: changed-paths-filter
         uses: wisemen-digital/devops-ga-changed-paths-filter@main
