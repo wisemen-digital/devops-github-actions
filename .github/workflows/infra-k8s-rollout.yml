@@ -1,5 +1,5 @@
 ---
-name: Rollout deployments (Azure)
+name: Rollout deployments (vendor agnostic)
 
 #
 # Check what's changed (via filters, or provide your own list) and roll it out.
@@ -8,21 +8,42 @@ name: Rollout deployments (Azure)
 on:
   workflow_call:
     # Depends on the following vars
-    # - AZURE_RESOURCE_GROUP
     # - K8S_CLUSTER_ID
+    # For Azure vendor:
+    # - AZURE_RESOURCE_GROUP
+    # For DigitalOcean vendor:
+    # For Scaleway vendor:
+    # - SCALEWAY_ORGANIZATION_ID
+    # - SCALEWAY_PROJECT_ID
+    # - SCALEWAY_REGION
     inputs:
-      # Cluster info
+      vendor:
+        description: The vendor to communicate with (azure, digitalocean, scaleway)
+        type: string
+        required: true
       cluster-deployments:
         description: List of deployments to roll out (folders), separated by commas
         required: true
         type: string
     secrets:
-      AZURE_CREDENTIALS:
-        description: Json string for login with an Azure service principal
-        required: true
       K8S_MODULES_SECRET:
         description: Token to access github modules repositories
         required: true
+      # Vendor: Azure
+      AZURE_CREDENTIALS:
+        description: Json string for login with an Azure service principal
+        required: false
+      # Vendor: DigitalOcean
+      DIGITALOCEAN_API_TOKEN:
+        description: DigitalOcean API token
+        required: false
+      # Vendor: Scaleway
+      SCALEWAY_ACCESS_KEY:
+        description: Scaleway API key ID
+        required: false
+      SCALEWAY_SECRET_KEY:
+        description: Scaleway API key secret
+        required: false
 
 jobs:
   generate-matrix:
@@ -31,8 +52,6 @@ jobs:
     outputs:
       deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
     steps:
-      - name: Deprecation message
-        run: echo "::warning file=.github/workflows/rollout-to-k8s.yml,line=20::Deprecated workflow, switch to vendor agnostic worlflow."
       - name: Generate Matrix
         id: changed-paths-filter
         uses: wisemen-digital/devops-ga-changed-paths-filter@main
@@ -53,9 +72,18 @@ jobs:
       - name: Apply Configuration
         uses: wisemen-digital/devops-ga-k8s-apply@main
         with:
-          vendor: azure
+          vendor: ${{ inputs.vendor }}
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
           config-path: ${{ matrix.deployment.path }}
           github-access-token: ${{ secrets.K8S_MODULES_SECRET }}
+          # Vendor: azure
           azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
           azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+          # Vendor: digitalocean
+          digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          # Vendor: scaleway
+          scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+          scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
+          scaleway-region: ${{ vars.SCALEWAY_REGION }}
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}

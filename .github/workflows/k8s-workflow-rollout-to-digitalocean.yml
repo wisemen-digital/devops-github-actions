@@ -30,6 +30,8 @@ jobs:
     outputs:
       deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
     steps:
+      - name: Deprecation message
+        run: echo "::warning file=.github/workflows/rollout-to-k8s.yml,line=20::Deprecated workflow, switch to vendor agnostic worlflow."
       - name: Generate Matrix
         id: changed-paths-filter
         uses: wisemen-digital/devops-ga-changed-paths-filter@main
