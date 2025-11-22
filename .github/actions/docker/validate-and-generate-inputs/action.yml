@@ -1,0 +1,82 @@
+---
+name: Validate and Generate Docker Inputs
+description: |
+  Validate docker workflow inputs, and generate build matrix
+inputs:
+  vendor:
+    description: The vendor to communicate with (azure, digitalocean, scaleway)
+    required: true
+  image-variants:
+    description: List of variants to build (folders in monorepo, separated by commas)
+    required: false
+  # Vendor: Azure
+  azure-credentials:
+    description: JSON string for login with an Azure service principal
+    required: false
+  azure-user:
+    description: Azure container registry user
+    required: false
+  azure-token:
+    description: Azure container registry token
+    required: false
+  # Vendor: DigitalOcean
+  digitalocean-user:
+    description: DigitalOcean user email
+    required: false
+  digitalocean-token:
+    description: DigitalOcean API token
+    required: false
+  # Vendor: Scaleway
+  scaleway-access-key:
+    description: Scaleway API key ID
+    required: false
+  scaleway-secret-key:
+    description: Scaleway API key secret
+    required: false
+outputs:
+  variants:
+    description: Job matrix of docker image variants
+    value: ${{ steps.monorepo-matrix.outputs.matrix || steps.normalrepo-matrix.outputs.matrix }}
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: .github
+    - name: Monorepo Matrix check
+      id: monorepo-matrix
+      if: hashFiles('.github/monorepo-rollout-filters.yaml') != ''
+      uses: wisemen-digital/devops-ga-changed-paths-filter@main
+      with:
+        filter-file: .github/monorepo-rollout-filters.yaml
+        changes-override: ${{ inputs.image-variants }}
+    - name: Normal Repo Fallback
+      id: normalrepo-matrix
+      if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
+      shell: bash
+      run: echo 'matrix=[{"environment":"","path":""}]' >> $GITHUB_OUTPUT;
+    - name: Validate inputs
+      shell: bash
+      run: |
+        echo "Validating inputs for vendor: ${{ inputs.vendor }}"
+        case "${{ inputs.vendor }}" in
+          azure)
+            if [ -z "${{ inputs.azure-credentials }}" ]; then echo 'Missing input: azure-credentials'; exit 1; fi
+            if [ -z "${{ inputs.azure-user }}" ]; then echo 'Missing input: azure-user'; exit 1; fi
+            if [ -z "${{ inputs.azure-token }}" ]; then echo 'Missing input: azure-token'; exit 1; fi
+            ;;
+          digitalocean)
+            if [ -z "${{ inputs.digitalocean-user }}" ]; then echo 'Missing input: digitalocean-user'; exit 1; fi
+            if [ -z "${{ inputs.digitalocean-token }}" ]; then echo 'Missing input: digitalocean-token'; exit 1; fi
+            ;;
+          scaleway)
+            if [ -z "${{ inputs.scaleway-access-key }}" ]; then echo 'Missing input: scaleway-access-key'; exit 1; fi
+            if [ -z "${{ inputs.scaleway-secret-key }}" ]; then echo 'Missing input: scaleway-secret-key'; exit 1; fi
+            ;;
+          *)
+            echo "Unsupported vendor '${{ inputs.vendor }}'"
+            exit 1
+            ;;
+        esac

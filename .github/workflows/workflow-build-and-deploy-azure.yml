@@ -46,6 +46,8 @@ jobs:
     outputs:
       variants: ${{ steps.monorepo.outputs.matrix || steps.normalrepo.outputs.matrix }}
     steps:
+      - name: Deprecation message
+        run: echo "::warning file=.github/workflows/auto-deploy-to-development.yml,line=11::Deprecated workflow, switch to vendor agnostic workflow."
       - name: Checkout
         uses: actions/checkout@v4
         with:

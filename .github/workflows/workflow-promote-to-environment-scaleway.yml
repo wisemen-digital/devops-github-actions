@@ -77,6 +77,8 @@ jobs:
     outputs:
       variants: ${{ steps.monorepo.outputs.matrix || steps.normalrepo.outputs.matrix }}
     steps:
+      - name: Deprecation message
+        run: echo "::warning file=.github/workflows/promote-to-enviroment.yml,line=18::Deprecated workflow, switch to vendor agnostic workflow."
       - name: Checkout
         uses: actions/checkout@v4
         with:
