@@ -50,7 +50,7 @@ jobs:
     environment: ${{ matrix.deployment.environment }}
     steps:
       - name: Apply Configuration
-        uses: wisemen-digital/devops-ga-s3-apply@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/s3/apply@main
         with:
           provider: digitalocean
           region: ${{ vars.DIGITALOCEAN_REGION }}

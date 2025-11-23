@@ -1,0 +1,65 @@
+---
+name: Rollout object storage (S3)
+description: |
+  Apply config changes for the given path. The path should contain a folder for
+  each bucket.
+inputs:
+  provider:
+    description: Provider to deploy to
+    required: true
+  region:
+    description: Region to deploy to
+    required: true
+  access-key:
+    description: API key ID
+    required: true
+  secret-key:
+    description: API key secret
+    required: true
+  config-path:
+    description: >
+      Path to configurations (should contain multiple folders, one for
+      each bucket)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Prepare
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: |
+          ${{ inputs.config-path }}
+    - name: Set up s3cmd cli tool
+      uses: s3-actions/s3cmd@main
+      with:
+        provider: ${{ inputs.provider }}
+        region: ${{ inputs.region }}
+        access_key: ${{ inputs.access-key}}
+        secret_key: ${{ inputs.secret-key }}
+
+    # Apply configurations
+    - name: Apply configurations
+      shell: bash
+      run: |
+        for bucket in ${{ inputs.config-path }}/*; do
+          # Create bucket (if needed)
+          BUCKET_URL="s3://$(basename $bucket)"
+          echo "Configuring ${BUCKET_URL}…"
+          s3cmd mb "$BUCKET_URL" || true
+
+          # Configure CORS
+          if [ -f "$bucket/cors.xml" ]; then
+            echo " - Configuring cors."
+            s3cmd setcors $bucket/cors.xml "$BUCKET_URL"
+          fi
+
+          # Configure lifecycle
+          if [ ! -f "$bucket/lifecycle.xml" ]; then
+            echo " - Using default lifecycle configuration."
+            cp "${{ github.action_path }}/defaults/lifecycle.xml" "$bucket/lifecycle.xml"
+          fi
+          echo " - Configuring lifecycle."
+          s3cmd setlifecycle "$bucket/lifecycle.xml" "$BUCKET_URL"
+        done

@@ -93,7 +93,7 @@ jobs:
           platforms: ${{ vars.CONTAINER_PLATFORMS }}
           target: ${{ matrix.variant.path }}
       - name: Rollout on cluster
-        uses: wisemen-digital/devops-ga-k8s-rollout@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@main
         with:
           vendor: digitalocean
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}

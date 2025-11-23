@@ -1,0 +1,115 @@
+---
+name: K8S Setup
+description: Prepare kubectl for communication with a cluster
+inputs:
+  vendor:
+    description: The vendor to communicate with (azure, digitalocean, scaleway)
+    required: true
+  cluster-id:
+    description: Target cluster ID
+    required: true
+  # Vendor: Azure
+  azure-credentials:
+    description: Json string for login with an Azure service principal
+    required: false
+  azure-resource-group:
+    description: Resource group name
+    required: false
+  # Vendor: DigitalOcean
+  digitalocean-api-token:
+    description: DigitalOcean API token
+    required: false
+  # Vendor: Scaleway
+  scaleway-organization-id:
+    description: Scaleway organization ID
+    required: false
+  scaleway-project-id:
+    description: Scaleway project ID
+    required: false
+  scaleway-region:
+    description: Scaleway deployment region (such as nl-ams)
+    required: false
+  scaleway-access-key:
+    description: Scaleway API key ID
+    required: false
+  scaleway-secret-key:
+    description: Scaleway API key secret
+    required: false
+
+runs:
+  using: composite
+  steps:
+    # Validate inputs
+    - name: Validate inputs
+      shell: bash
+      run: |
+        echo "Validating inputs for vendor: ${{ inputs.vendor }}"
+        case "${{ inputs.vendor }}" in
+          azure)
+            if [ -z "${{ inputs.azure-credentials }}" ]; then echo 'Missing input: azure-credentials'; exit 1; fi
+            if [ -z "${{ inputs.azure-resource-group }}" ]; then echo 'Missing input: azure-resource-group'; exit 1; fi
+            ;;
+          digitalocean)
+            if [ -z "${{ inputs.digitalocean-api-token }}" ]; then echo 'Missing input: digitalocean-api-token'; exit 1; fi
+            ;;
+          scaleway)
+            if [ -z "${{ inputs.scaleway-access-key }}" ]; then echo 'Missing input: scaleway-access-key'; exit 1; fi
+            if [ -z "${{ inputs.scaleway-organization-id }}" ]; then echo 'Missing input: scaleway-organization-id'; exit 1; fi
+            if [ -z "${{ inputs.scaleway-project-id }}" ]; then echo 'Missing input: scaleway-project-id'; exit 1; fi
+            if [ -z "${{ inputs.scaleway-region }}" ]; then echo 'Missing input: scaleway-region'; exit 1; fi
+            if [ -z "${{ inputs.scaleway-secret-key }}" ]; then echo 'Missing input: scaleway-secret-key'; exit 1; fi
+            ;;
+          *)
+            echo "Unsupported vendor '${{ inputs.vendor }}'"
+            exit 1
+            ;;
+        esac
+
+    # Vendor: Azure
+    - name: Set up kubelogin for non-interactive login
+      if: ${{ inputs.vendor == 'azure' }}
+      uses: azure/use-kubelogin@v1
+      with:
+        kubelogin-version: 'latest'
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: Azure login
+      if: ${{ inputs.vendor == 'azure' }}
+      uses: azure/login@v2
+      with:
+        creds: ${{ inputs.azure-credentials }}
+    - name: Save Azure kubeconfig
+      if: ${{ inputs.vendor == 'azure' }}
+      uses: azure/aks-set-context@v4
+      with:
+        resource-group: ${{ inputs.azure-resource-group}}
+        cluster-name: ${{ inputs.cluster-id }}
+        admin: 'false'
+        use-kubelogin: 'true'
+
+    # Vendor: Digitalocean
+    - name: Install doctl tool
+      if: ${{ inputs.vendor == 'digitalocean' }}
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ inputs.digitalocean-api-token }}
+    - name: Save DigitalOcean kubeconfig
+      if: ${{ inputs.vendor == 'digitalocean' }}
+      shell: bash
+      run: doctl k8s cluster kubeconfig save ${{ inputs.cluster-id }}
+
+    # Vendor: Scaleway
+    - name: Install scw tool
+      if: ${{ inputs.vendor == 'scaleway' }}
+      uses: scaleway/action-scw@v0
+      with:
+        access-key: ${{ inputs.scaleway-access-key }}
+        secret-key: ${{ inputs.scaleway-secret-key }}
+        default-organization-id: ${{ inputs.scaleway-organization-id }}
+        default-project-id: ${{ inputs.scaleway-project-id }}
+        export-config: true
+        save-config: true
+    - name: Save Scaleway kubeconfig
+      if: ${{ inputs.vendor == 'scaleway' }}
+      shell: bash
+      run: scw k8s kubeconfig install ${{ inputs.cluster-id }} region=${{ inputs.scaleway-region }}
