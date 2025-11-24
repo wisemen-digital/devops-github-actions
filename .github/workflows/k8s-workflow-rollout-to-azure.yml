@@ -37,4 +37,6 @@ jobs:
     with:
       vendor: azure
       cluster-deployments: ${{ inputs.cluster-deployments }}
-    secrets: inherit
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      K8S_MODULES_SECRET: ${{ secrets.K8S_MODULES_SECRET }}

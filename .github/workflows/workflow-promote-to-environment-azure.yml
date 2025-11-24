@@ -62,4 +62,7 @@ jobs:
       environment-map: ${{ inputs.environment-map }}
       image: ${{ inputs.image }}
       image-variants: ${{ inputs.image-variants }}
-    secrets: inherit
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_CR_USER: ${{ secrets.AZURE_CR_USER }}
+      AZURE_CR_TOKEN: ${{ secrets.AZURE_CR_TOKEN }}

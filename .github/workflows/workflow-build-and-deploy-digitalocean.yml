@@ -50,4 +50,6 @@ jobs:
       environment: ${{ inputs.environment }}
       image: ${{ inputs.image }}
       image-variants: ${{ inputs.image-variants }}
-    secrets: inherit
+    secrets:
+      DIGITALOCEAN_API_USER: ${{ secrets.DIGITALOCEAN_API_USER }}
+      DIGITALOCEAN_API_TOKEN: ${{ secrets.DIGITALOCEAN_API_TOKEN }}

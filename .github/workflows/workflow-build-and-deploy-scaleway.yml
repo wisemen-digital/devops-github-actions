@@ -78,4 +78,6 @@ jobs:
       environment: ${{ inputs.environment }}
       image: ${{ inputs.image }}
       image-variants: ${{ inputs.image-variants }}
-    secrets: inherit
+    secrets:
+      SCALEWAY_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+      SCALEWAY_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}

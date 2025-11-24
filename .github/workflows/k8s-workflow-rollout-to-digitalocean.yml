@@ -36,4 +36,6 @@ jobs:
     with:
       vendor: digitalocean
       cluster-deployments: ${{ inputs.cluster-deployments }}
-    secrets: inherit
+    secrets:
+      DIGITALOCEAN_API_TOKEN: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+      K8S_MODULES_SECRET: ${{ secrets.K8S_MODULES_SECRET }}

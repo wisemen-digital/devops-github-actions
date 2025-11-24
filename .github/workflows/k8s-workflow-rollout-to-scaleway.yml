@@ -42,4 +42,7 @@ jobs:
     with:
       vendor: scaleway
       cluster-deployments: ${{ inputs.cluster-deployments }}
-    secrets: inherit
+    secrets:
+      K8S_MODULES_SECRET: ${{ secrets.K8S_MODULES_SECRET }}
+      SCALEWAY_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+      SCALEWAY_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
