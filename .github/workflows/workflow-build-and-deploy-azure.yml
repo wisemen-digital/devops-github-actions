@@ -40,69 +40,18 @@ on:
         required: true
 
 jobs:
-  generate-matrix:
-    name: Generate job matrices
+  deprecation-warning:
+    name: Deprecation message
     runs-on: ubuntu-latest
-    outputs:
-      variants: ${{ steps.monorepo.outputs.matrix || steps.normalrepo.outputs.matrix }}
     steps:
       - name: Deprecation message
         run: echo "::warning file=.github/workflows/auto-deploy-to-development.yml,line=11::Deprecated workflow, switch to vendor agnostic workflow."
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Monorepo Matrix check
-        id: monorepo
-        if: hashFiles('.github/monorepo-rollout-filters.yaml') != ''
-        uses: wisemen-digital/devops-ga-changed-paths-filter@main
-        with:
-          filter-file: .github/monorepo-rollout-filters.yaml
-          changes-override: ${{ inputs.image-variants }}
-      - name: Normal Repo Fallback
-        id: normalrepo
-        if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
-        run: echo 'matrix=[{"environment":"","path":""}]' >> $GITHUB_OUTPUT;
 
   build-and-deploy:
-    name: Build & Deploy ${{ matrix.variant.path }} to ${{ inputs.environment }}
-    needs: [generate-matrix]
-    if: ${{ needs.generate-matrix.outputs.variants != '[]' }}
-    strategy:
-      matrix:
-        variant: ${{ fromJson(needs.generate-matrix.outputs.variants) }}
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    steps:
-      - name: Prepare environment
-        run: |
-          echo "image=`basename ${{ inputs.image || github.repository }}`" >> "$GITHUB_ENV"
-          if [ -z "${{ matrix.variant.path }}" ]; then
-            echo "image_suffix=" >> "$GITHUB_ENV"
-            echo "rollout_labels=${{ vars.K8S_LABELS }}" >> "$GITHUB_ENV"
-          else
-            labels=(${{ vars.K8S_LABELS }} variant=${{ matrix.variant.path }})
-            echo "image_suffix=-${{ matrix.variant.path }}" >> "$GITHUB_ENV"
-            echo "rollout_labels=$(IFS=,;echo "${labels[*]}")" >> "$GITHUB_ENV"
-          fi
-      - name: Docker build & push
-        uses: wisemen-digital/devops-ga-docker-build-push@main
-        with:
-          container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
-          container-registry-username: ${{ secrets.AZURE_CR_USER }}
-          container-registry-password: ${{ secrets.AZURE_CR_TOKEN }}
-          github-access-token: ${{ secrets.GITHUB_TOKEN }}
-          image: ${{ env.image }}${{ env.image_suffix }}
-          tags: ${{ inputs.environment }}
-          platforms: ${{ vars.CONTAINER_PLATFORMS }}
-          target: ${{ matrix.variant.path }}
-      - name: Rollout on cluster
-        uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@main
-        with:
-          vendor: azure
-          cluster-id: ${{ vars.K8S_CLUSTER_ID }}
-          rollout-deployments: ${{ vars.K8S_DEPLOYMENTS }}
-          rollout-labels: ${{ env.rollout_labels }}
-          rollout-namespace: ${{ vars.K8S_NAMESPACE }}
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
-          azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+    uses: wisemen-digital/devops-github-actions/.github/workflows/docker-build-and-deploy.yml@main
+    with:
+      vendor: azure
+      environment: ${{ inputs.environment }}
+      image: ${{ inputs.image }}
+      image-variants: ${{ inputs.image-variants }}
+    secrets: inherit
