@@ -14,74 +14,12 @@ on:
         required: false
 
 jobs:
-  preview-k8s:
-    name: Diff with k8s
+  deprecation-warning:
+    name: Deprecation message
     runs-on: ubuntu-latest
     steps:
       - name: Deprecation message
-        run: echo "::warning file=.github/workflows/pullrequest-check.yml,line=17::Deprecated workflow, switch to new infra workflow path.""
-      - name: Generate changed paths
-        id: changed-paths-filter
-        uses: wisemen-digital/devops-ga-changed-paths-filter@main
-        with:
-          filter-file: .github/k8s-rollout-filters.yaml
-      - name: Ensure access to private repositories
-        shell: bash
-        run: |
-          AUTH="x-access-token:${{ secrets.K8S_MODULES_SECRET }}"
-          git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
-      - name: Generate diffs
-        id: preview
-        run: |
-          changed_paths=`echo $matrix | jq -r '.[].path'`
+        run: echo "::warning file=.github/workflows/pullrequest-check.yml,line=17::Deprecated workflow, switch to new infra workflow path."
 
-          # Generate new content
-          while IFS= read -r path; do
-            echo "Processing new $path…"
-            mkdir -p `dirname diff-new/$path`
-            if [ -e "$path" ]; then
-              kubectl kustomize "$path" > "diff-new/$path"
-            else
-              touch "diff-new/$path"
-            fi
-          done <<< "$changed_paths"
-
-          # Checkout main
-          echo "Switching to main branch…"
-          git remote set-branches origin main
-          git fetch --quiet --depth 1 origin main
-          git checkout --quiet main
-
-          # Generate old content
-          while IFS= read -r path; do
-            echo "Processing old $path…"
-            mkdir -p `dirname diff-old/$path`
-            if [ -e "$path" ]; then
-              kubectl kustomize "$path" > "diff-old/$path"
-            else
-              touch "diff-old/$path"
-            fi
-          done <<< "$changed_paths"
-
-          # Generate diffs
-          echo "Generating diffs…"
-          {
-            echo 'contents<<EOF'
-            while IFS= read -r path; do
-              echo "<details><summary>$path</summary>"
-              echo -e '\n```diff'
-              diff -u "diff-old/$path" "diff-new/$path" || true
-              echo -e '```\n</details>'
-            done <<< "$changed_paths"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
-        env:
-          matrix: ${{ steps.changed-paths-filter.outputs.matrix }}
-      - name: Comment PR with preview
-        if: "${{ steps.preview.outputs.contents != '' }}"
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          message: |
-            K8S Previews
-            ${{ steps.preview.outputs.contents }}
-          comment-tag: k8s-preview
+  k8s-preview:
+    uses: wisemen-digital/devops-github-actions/.github/workflows/infra-k8s-preview.yml@main
