@@ -97,11 +97,11 @@ jobs:
 
   promote-tag:
     name: Promote ${{ matrix.variant.path }} to ${{ inputs.environment-target }}
-    needs: [generate-matrix, validate-inputs]
-    if: ${{ needs.generate-matrix.outputs.variants != '[]' }}
+    needs: [validate-and-generate-matrix]
+    if: ${{ needs.validate-and-generate-matrix.outputs.variants != '[]' }}
     strategy:
       matrix:
-        variant: ${{ fromJson(needs.generate-matrix.outputs.variants) }}
+        variant: ${{ fromJson(needs.validate-and-generate-matrix.outputs.variants) }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment-target }}
     steps:
