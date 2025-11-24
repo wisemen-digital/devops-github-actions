@@ -24,34 +24,16 @@ on:
         required: true
 
 jobs:
-  generate-matrix:
-    name: Generate job matrices
+  deprecation-warning:
+    name: Deprecation message
     runs-on: ubuntu-latest
-    outputs:
-      deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
     steps:
-      - name: Generate Matrix
-        id: changed-paths-filter
-        uses: wisemen-digital/devops-ga-changed-paths-filter@main
-        with:
-          filter-file: .github/s3-rollout-filters.yaml
-          changes-override: ${{ inputs.bucket-deployments }}
+      - name: Deprecation message
+        run: echo "::warning file=.github/workflows/rollout-to-s3.yml,line=20::Deprecated workflow, switch to vendor agnostic workflow."
 
   rollout-to-s3:
-    name: Rollout to s3
-    needs: [generate-matrix]
-    strategy:
-      matrix:
-        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
-    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
-    runs-on: ubuntu-latest
-    environment: ${{ matrix.deployment.environment }}
-    steps:
-      - name: Apply Configuration
-        uses: wisemen-digital/devops-ga-s3-apply@main
-        with:
-          provider: scaleway
-          region: ${{ vars.SCALEWAY_REGION }}
-          config-path: ${{ matrix.deployment.path }}
-          access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
-          secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+    uses: wisemen-digital/devops-github-actions/.github/workflows/infra-s3-rollout.yml@main
+    with:
+      vendor: scaleway
+      bucket-deployments: ${{ inputs.bucket-deployments }}
+    secrets: inherit

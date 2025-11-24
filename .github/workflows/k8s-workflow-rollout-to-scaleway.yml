@@ -30,38 +30,16 @@ on:
         required: true
 
 jobs:
-  generate-matrix:
-    name: Generate job matrices
+  deprecation-warning:
+    name: Deprecation message
     runs-on: ubuntu-latest
-    outputs:
-      deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
     steps:
-      - name: Generate Matrix
-        id: changed-paths-filter
-        uses: wisemen-digital/devops-ga-changed-paths-filter@main
-        with:
-          filter-file: .github/k8s-rollout-filters.yaml
-          changes-override: ${{ inputs.cluster-deployments }}
+      - name: Deprecation message
+        run: echo "::warning file=.github/workflows/rollout-to-k8s.yml,line=20::Deprecated workflow, switch to vendor agnostic workflow."
 
   rollout-to-k8s:
-    name: Rollout to k8s
-    needs: [generate-matrix]
-    strategy:
-      matrix:
-        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
-    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
-    runs-on: ubuntu-latest
-    environment: ${{ matrix.deployment.environment }}
-    steps:
-      - name: Apply Configuration
-        uses: wisemen-digital/devops-ga-k8s-apply@main
-        with:
-          vendor: scaleway
-          cluster-id: ${{ vars.K8S_CLUSTER_ID }}
-          config-path: ${{ matrix.deployment.path }}
-          github-access-token: ${{ secrets.K8S_MODULES_SECRET }}
-          scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
-          scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
-          scaleway-region: ${{ vars.SCALEWAY_REGION }}
-          scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
-          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+    uses: wisemen-digital/devops-github-actions/.github/workflows/infra-k8s-rollout.yml@main
+    with:
+      vendor: scaleway
+      cluster-deployments: ${{ inputs.cluster-deployments }}
+    secrets: inherit

@@ -9,119 +9,12 @@ on:
   workflow_call:
 
 jobs:
-  yaml-lint:
-    name: Lint YAML
+  deprecation-warning:
+    name: Deprecation message
     runs-on: ubuntu-latest
     steps:
-      - name: Lint
-        uses: wisemen-digital/devops-ga-lint-yaml@main
+      - name: Deprecation message
+        run: echo "::warning file=.github/workflows/lint.yml,line=12::Deprecated workflow, switch to new infra workflow path."
 
-  env-lint:
-    name: Lint Environment Files
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Lint
-        run: |
-          shopt -s globstar
-          result=0
-
-          for file in **/env/*.properties; do
-            echo "Found ${file}"
-            if [[ "$file" == *"/base/"* ]]; then continue; fi
-
-            # Try to find base env
-            filename=$(basename $file)
-            base="$(dirname $file)/../../../base/env/$filename"
-            if [ ! -f "$base" ]; then
-              echo "::warning file=$file::Base file not found ($base)."
-              continue
-            fi
-
-            # Diff keys
-            echo "Comparing $file to $(realpath --relative-to "." $base)…"
-            set +e
-            keys_diff=`diff \
-              <(yq -o=props -p=props 'keys | sort | .[]' $base) \
-              <(yq -o=props -p=props 'keys | sort | .[]' $file)`
-            set -e
-
-            # Generate errors
-            echo "$keys_diff" | while read -r line; do
-              if [[ $line == "> "* ]]; then
-                echo "::error file=$file::Extraneous key ${line:2}, remove it (or add it to base)."
-                result=1
-              elif [[ $line == "< "* ]]; then
-                echo "::error file=$file::Missing key ${line:2}, add it."
-                result=1
-              fi
-            done
-          done
-          exit $result
-
-  xml-lint:
-    name: Lint XML
-    runs-on: ubuntu-latest
-    container: alpine:latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install xmllint
-        if: ${{ hashFiles('s3/**/*.xml') != '' }}
-        run: apk add --no-cache libxml2-utils
-      - name: Validate S3 CORS configurations
-        if: ${{ hashFiles('s3/**/cors.xml') != '' }}
-        run: |
-          echo '${{ env.aws-xmllint-matcher-json }}' > "aws-xmllint-matcher.json"
-          echo '${{ env.aws-xsd }}' > "aws.xsd"
-          echo '::add-matcher::aws-xmllint-matcher.json'
-          find s3 -name "cors.xml" -print0 | xargs -0 xmllint --schema aws.xsd --noout
-          echo '::remove-matcher owner=aws-xmllint::'
-        env:
-          aws-xmllint-matcher-json: >-
-            {
-              "problemMatcher": [
-                {
-                  "owner": "aws-xmllint",
-                  "pattern": [
-                    {
-                      "regexp": "^(.+):(\\d+):\\s+(.+)\\s+:\\s+(.+)$",
-                      "file": 1,
-                      "line": 2,
-                      "code": 3,
-                      "message": 4
-                    }
-                  ]
-                }
-              ]
-            }
-          aws-xsd: >-
-            <?xml version="1.0" encoding="UTF-8"?>
-            <xsd:schema
-              xmlns:tns="http://s3.amazonaws.com/doc/2006-03-01/"
-              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-              elementFormDefault="qualified"
-              targetNamespace="http://s3.amazonaws.com/doc/2006-03-01/">
-              <xsd:element name="CORSConfiguration" type="tns:CORSConfigurationType"/>
-              <xsd:complexType name="CORSConfigurationType">
-                <xsd:sequence>
-                  <xsd:element name="CORSRule" type="tns:CORSRuleType"
-                    minOccurs="1" maxOccurs="unbounded"/>
-                </xsd:sequence>
-              </xsd:complexType>
-              <xsd:complexType name="CORSRuleType">
-                <xsd:sequence>
-                  <xsd:element name="AllowedHeader" type="xsd:string"
-                    minOccurs="0" maxOccurs="unbounded"/>
-                  <xsd:element name="AllowedMethod" type="xsd:string"
-                    minOccurs="1" maxOccurs="unbounded"/>
-                  <xsd:element name="AllowedOrigin" type="xsd:string"
-                    minOccurs="1" maxOccurs="unbounded"/>
-                  <xsd:element name="ExposeHeader" type="xsd:string"
-                    minOccurs="0" maxOccurs="unbounded"/>
-                  <xsd:element name="MaxAgeSeconds" type="xsd:positiveInteger"
-                    minOccurs="0" maxOccurs="1"/>
-                </xsd:sequence>
-              </xsd:complexType>
-            </xsd:schema>
+  lint-infra:
+    uses: wisemen-digital/devops-github-actions/.github/workflows/infra-lint.yml@main

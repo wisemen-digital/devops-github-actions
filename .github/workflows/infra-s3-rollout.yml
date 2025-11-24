@@ -1,0 +1,108 @@
+---
+name: Rollout object storage (S3)
+
+#
+# Check what's changed (via filters, or provide your own list) and roll it out.
+#
+
+on:
+  workflow_call:
+    # Depends on the following vars
+    # For DigitalOcean vendor:
+    # - DIGITALOCEAN_REGION
+    # For Scaleway vendor:
+    # - SCALEWAY_REGION
+    inputs:
+      vendor:
+        description: The vendor to communicate with (azure, digitalocean, scaleway)
+        type: string
+        required: true
+      bucket-deployments:
+        description: List of deployments to roll out (folders), separated by commas
+        required: false
+        type: string
+    secrets:
+      # Vendor: DigitalOcean
+      DIGITALOCEAN_ACCESS_KEY:
+        description: DigitalOcean API key ID
+        required: false
+      DIGITALOCEAN_SECRET_KEY:
+        description: DigitalOcean API key secret
+        required: false
+      # Vendor: Scaleway
+      SCALEWAY_ACCESS_KEY:
+        description: Scaleway API key ID
+        required: false
+      SCALEWAY_SECRET_KEY:
+        description: Scaleway API key secret
+        required: false
+
+jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
+    steps:
+      - name: Generate Matrix
+        id: changed-paths-filter
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/s3-rollout-filters.yaml
+          changes-override: ${{ inputs.bucket-deployments }}
+  validate-inputs:
+    name: Validate inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate inputs
+        run: |
+          echo "Validating inputs for vendor: ${{ inputs.vendor }}"
+          case "${{ inputs.vendor }}" in
+            digitalocean)
+              if [ -z "${{ secrets.DIGITALOCEAN_ACCESS_KEY }}" ]; then echo 'Missing secret: DIGITALOCEAN_ACCESS_KEY'; exit 1; fi
+              if [ -z "${{ secrets.DIGITALOCEAN_SECRET_KEY }}" ]; then echo 'Missing secret: DIGITALOCEAN_SECRET_KEY'; exit 1; fi
+              if [ -z "${{ vars.DIGITALOCEAN_REGION }}" ]; then echo 'Missing var: DIGITALOCEAN_REGION'; exit 1; fi
+              ;;
+            scaleway)
+              if [ -z "${{ secrets.SCALEWAY_ACCESS_KEY }}" ]; then echo 'Missing secret: SCALEWAY_ACCESS_KEY'; exit 1; fi
+              if [ -z "${{ secrets.SCALEWAY_SECRET_KEY }}" ]; then echo 'Missing secret: SCALEWAY_SECRET_KEY'; exit 1; fi
+              if [ -z "${{ vars.SCALEWAY_REGION }}" ]; then echo 'Missing secret: SCALEWAY_REGION'; exit 1; fi
+              ;;
+            *)
+              echo "Unsupported vendor '${{ inputs.vendor }}'"
+              exit 1
+              ;;
+          esac
+
+  rollout-to-s3:
+    name: Rollout to s3
+    needs: [generate-matrix, validate-inputs]
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    runs-on: ubuntu-latest
+    environment: ${{ matrix.deployment.environment }}
+    steps:
+      - name: Prepare environment
+        run: |
+          case "${{ inputs.vendor }}" in
+            digitalocean)
+              echo "access_key=${{ secrets.DIGITALOCEAN_ACCESS_KEY }}" >> "$GITHUB_ENV"
+              echo "secret_key=${{ secrets.DIGITALOCEAN_SECRET_KEY }}" >> "$GITHUB_ENV"
+              echo "region=${{ vars.DIGITALOCEAN_REGION }}" >> "$GITHUB_ENV"
+              ;;
+            scaleway)
+              echo "access_key=${{ secrets.SCALEWAY_ACCESS_KEY }}" >> "$GITHUB_ENV"
+              echo "secret_key=${{ secrets.SCALEWAY_SECRET_KEY }}" >> "$GITHUB_ENV"
+              echo "region=${{ vars.SCALEWAY_REGION }}" >> "$GITHUB_ENV"
+              ;;
+          esac
+      - name: Apply Configuration
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/s3/apply@main
+        with:
+          provider: ${{ inputs.vendor }}
+          config-path: ${{ matrix.deployment.path }}
+          access-key: ${{ env.access_key }}
+          secret-key: ${{ env.secret_key }}
+          region: ${{ env.region }}

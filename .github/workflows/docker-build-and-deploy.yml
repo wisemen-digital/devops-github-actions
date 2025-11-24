@@ -1,0 +1,146 @@
+---
+name: Build & deploy to environment
+
+#
+# Build the docker image, and deploy it to the given environment.
+#
+
+on:
+  workflow_call:
+    # Depends on the following vars
+    # - CONTAINER_PLATFORMS
+    # - CONTAINER_REGISTRY_ENDPOINT
+    # - K8S_CLUSTER_ID
+    # - K8S_DEPLOYMENTS
+    # - K8S_LABELS
+    # - K8S_NAMESPACE
+    # For Azure vendor:
+    # - AZURE_RESOURCE_GROUP
+    # For DigitalOcean vendor:
+    # For Scaleway vendor:
+    # - SCALEWAY_ORGANIZATION_ID
+    # - SCALEWAY_PROJECT_ID
+    # - SCALEWAY_REGION
+    inputs:
+      vendor:
+        description: The vendor to communicate with (azure, digitalocean, scaleway)
+        type: string
+        required: true
+      environment:
+        description: Target environment to deploy to
+        type: string
+        required: true
+      image:
+        description: Image name (fallback to repository name)
+        type: string
+        required: false
+      image-variants:
+        description: List of variants to build (folders in monorepo, separated by commas)
+        type: string
+        required: false
+    secrets:
+      # Vendor: Azure
+      AZURE_CREDENTIALS:
+        description: Json string for login with an Azure service principal
+        required: false
+      AZURE_CR_USER:
+        description: Azure container registry user
+        required: false
+      AZURE_CR_TOKEN:
+        description: Azure container registry token
+        required: false
+      # Vendor: DigitalOcean
+      DIGITALOCEAN_API_USER:
+        description: DigitalOcean user email
+        required: false
+      DIGITALOCEAN_API_TOKEN:
+        description: DigitalOcean API token
+        required: false
+      # Vendor: Scaleway
+      SCALEWAY_ACCESS_KEY:
+        description: Scaleway API key ID
+        required: false
+      SCALEWAY_SECRET_KEY:
+        description: Scaleway API key secret
+        required: false
+
+jobs:
+  validate-and-generate-matrix:
+    name: Validate inputs & generate build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      variants: ${{ steps.gen-matrix.outputs.variants }}
+    steps:
+      - name: Validate & generate docker workflow inputs
+        id: gen-matrix
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/validate-and-generate-inputs@main
+        with:
+          vendor: ${{ inputs.vendor }}
+          image-variants: ${{ inputs.image-variants }}
+          # Vendor: azure
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
+          azure-user: ${{ secrets.AZURE_CR_USER }}
+          azure-token: ${{ secrets.AZURE_CR_TOKEN }}
+          # Vendor: digitalocean
+          digitalocean-user: ${{ secrets.DIGITALOCEAN_API_USER }}
+          digitalocean-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          # Vendor: scaleway
+          scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+
+  build-and-deploy:
+    name: Build & Deploy ${{ matrix.variant.path }} to ${{ inputs.environment }}
+    needs: [validate-and-generate-matrix]
+    if: ${{ needs.validate-and-generate-matrix.outputs.variants != '[]' }}
+    strategy:
+      matrix:
+        variant: ${{ fromJson(needs.validate-and-generate-matrix.outputs.variants) }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Prepare environment
+        id: prep-environment
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/prep-environment@main
+        with:
+          vendor: ${{ inputs.vendor }}
+          image: ${{ inputs.image }}
+          variant-path: ${{ matrix.variant.path }}
+          k8s-labels: ${{ vars.K8S_LABELS }}
+          # Vendor: azure
+          azure-user: ${{ secrets.AZURE_CR_USER }}
+          azure-token: ${{ secrets.AZURE_CR_TOKEN }}
+          # Vendor: digitalocean
+          digitalocean-user: ${{ secrets.DIGITALOCEAN_API_USER }}
+          digitalocean-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          # Vendor: scaleway
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Docker build & push
+        uses: wisemen-digital/devops-ga-docker-build-push@main
+        with:
+          container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
+          container-registry-username: ${{ steps.prep-environment.outputs.registry-username }}
+          container-registry-password: ${{ steps.prep-environment.outputs.registry-password }}
+          github-access-token: ${{ secrets.GITHUB_TOKEN }}
+          image: ${{ steps.prep-environment.outputs.image }}${{ steps.prep-environment.outputs.image-suffix }}
+          tags: ${{ inputs.environment }}
+          platforms: ${{ vars.CONTAINER_PLATFORMS }}
+          target: ${{ matrix.variant.path }}
+      - name: Rollout on cluster
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@main
+        with:
+          vendor: ${{ inputs.vendor }}
+          cluster-id: ${{ vars.K8S_CLUSTER_ID }}
+          rollout-deployments: ${{ vars.K8S_DEPLOYMENTS }}
+          rollout-labels: ${{ steps.prep-environment.outputs.rollout-labels }}
+          rollout-namespace: ${{ vars.K8S_NAMESPACE }}
+          # Vendor: azure
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
+          azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+          # Vendor: digitalocean
+          digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          # Vendor: scaleway
+          scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+          scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
+          scaleway-region: ${{ vars.SCALEWAY_REGION }}
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
