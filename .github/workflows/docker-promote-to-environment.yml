@@ -89,8 +89,8 @@ jobs:
           azure-user: ${{ secrets.AZURE_CR_USER }}
           azure-token: ${{ secrets.AZURE_CR_TOKEN }}
           # Vendor: digitalocean
-          digitalocean-api-user: ${{ secrets.DIGITALOCEAN_API_USER }}
-          digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          digitalocean-user: ${{ secrets.DIGITALOCEAN_API_USER }}
+          digitalocean-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
           # Vendor: scaleway
           scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
@@ -117,8 +117,8 @@ jobs:
           azure-user: ${{ secrets.AZURE_CR_USER }}
           azure-token: ${{ secrets.AZURE_CR_TOKEN }}
           # Vendor: digitalocean
-          digitalocean-api-user: ${{ secrets.DIGITALOCEAN_API_USER }}
-          digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          digitalocean-user: ${{ secrets.DIGITALOCEAN_API_USER }}
+          digitalocean-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
           # Vendor: scaleway
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
       - name: Re-tag image
