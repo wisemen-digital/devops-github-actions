@@ -4,6 +4,8 @@
 
 This workflow will lint, build & test a Node application.
 
+The workflow first resolves impacted workspaces using `rolloutfilters.yaml` (or your override) through the `wisemen-digital/devops-ga-changed-paths-filter` action and only proceeds when at least one of those workspaces exposes the configured `pnpm-script` (default `test:pipeline`). If the filter file does not exist, the workflow runs unconditionally.
+
 ### Lint
 
 This job presumes there's a `lint` package command, which usually invokes `eslint` with some file filters.
@@ -23,6 +25,9 @@ For the test job, it will set up:
 | Input | Description |
 | ----- | ----------- |
 | `node-version` | Node version to use, defaults to `lts` |
+| `pnpm-script` | Script to look for in impacted workspaces before running; workflow is skipped if none are found (defaults to `test:pipeline`) |
+| `rollout-filter-file` | Path to the rollout filters file used to resolve impacted workspaces (defaults to `rolloutfilters.yaml`) |
+| `rollout-filter-override` | Override the rollout filters to evaluate (comma separated, or `_all_` to include everything) |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
 | `test-nats-enabled` | Whether or not to create the NATS service (defaults to `false`) |
 | `test-nats-image` | NATS image to use for the tests, defaults to `ghcr.io/wisemen-digital/test-nats:latest` |

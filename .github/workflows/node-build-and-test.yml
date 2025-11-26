@@ -71,9 +71,88 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-impacted:
+    name: Detect impacted workspaces
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check-script.outputs.should-run }}
+      filters: ${{ steps.monorepo-matrix.outputs.matrix || steps.normalrepo-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Monorepo Matrix check
+        id: monorepo-matrix
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') != ''
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/monorepo-rollout-filters.yaml
+      - name: Normal Repo Fallback
+        id: normalrepo-matrix
+        if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
+        shell: bash
+        run: echo 'matrix=[{"environment":"","path":""}]' >> $GITHUB_OUTPUT;
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Check pnpm script presence
+        id: check-script
+        env:
+          MATRIX: ${{ steps.monorepo-matrix.outputs.matrix || steps.normalrepo-matrix.outputs.matrix }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$MATRIX" || "$MATRIX" == "[]" ]]; then
+            echo "should-run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$MATRIX" == '[{"environment":"","path":""}]' ]]; then
+            echo "should-run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          for cmd in pnpm jq; do
+            if ! command -v "$cmd" >/dev/null; then
+              echo "$cmd is required but not found on PATH." >&2
+              exit 1
+            fi
+          done
+
+          FILTERS=$(echo "$MATRIX" | jq -r '.[].path')
+
+          FILTER_ARGS=()
+          for filter in $FILTERS; do
+            FILTER_ARGS+=(--filter "$filter")
+          done
+
+          packages=$(pnpm m ls -r --json "${FILTER_ARGS[@]}" | jq -r '.[].path // empty')
+
+          count=0
+
+          while IFS= read -r pkg; do
+            manifest="$pkg/package.json"
+
+            if [[ -f "$manifest" ]] && jq -e --arg script "build:api" '.scripts[$script]? != null' "$manifest" >/dev/null; then
+              count=$((count + 1))
+            fi
+          done <<< "$packages"
+
+          if [[ "$count" -gt 0 ]]; then
+            echo "should-run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            echo "should-run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
   # First lint & build
   lint:
     name: Lint Application
+    needs: [detect-impacted]
+    if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -99,6 +178,8 @@ jobs:
         run: pnpm lint --cache --cache-location .eslintcache --cache-strategy content
   build:
     name: Build Application
+    needs: [detect-impacted]
+    if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -114,7 +195,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Run build
-        run: pnpm build
+        env:
+          FILTERS: ${{ needs.detect-impacted.outputs.filters }}
+        run: |
+          set -euo pipefail
+
+          FILTER_ARGS=()
+
+          if [[ -n "${FILTERS:-}" && "${FILTERS}" != "[]" && "${FILTERS}" != '[{"environment":"","path":""}]' ]]; then
+            while IFS= read -r filter; do
+              [[ -n "$filter" ]] || continue
+              FILTER_ARGS+=(--filter "$filter")
+            done < <(echo "$FILTERS" | jq -r '.[].path // empty')
+          fi
+
+          pnpm "${FILTER_ARGS[@]}" build:api
       # Archive
       - name: Store archive
         uses: actions/upload-artifact@v4
@@ -126,6 +221,8 @@ jobs:
           retention-days: 3
   prep-test:
     name: Prepare Test Services
+    needs: [detect-impacted]
+    if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     outputs:
       mssql-image: ${{ steps.data.outputs.mssql-image }}
@@ -250,7 +347,7 @@ jobs:
       - name: Run tests
         run: |
           touch '.env.test'
-          NODE_OPTIONS='--test-reporter=tap --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-report-junit.xml' pnpm test:pipeline
+          NODE_OPTIONS='--test-reporter=tap --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-report-junit.xml' pnpm test:api
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
