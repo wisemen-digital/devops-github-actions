@@ -87,4 +87,25 @@ runs:
         git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
     - name: Apply config
       shell: bash
-      run: kubectl apply -k ${{ inputs.config-path }}
+      run: |
+        run_cmd() {
+          case "${{ inputs.vendor }}" in
+            azure)
+              az aks command invoke \
+                --name "${{ inputs.cluster-id }}" \
+                --resource-group "${{ inputs.azure-resource-group }}" \
+                --file "$manifest_file" \
+                --command "$*"
+              ;;
+            *)
+              eval "$*"
+              ;;
+          esac
+        }
+
+        # Pre-run kustomize so we can send manifest remotely if needed
+        manifest_file=`mktemp --tmpdir=. --suffix .yaml`
+        kubectl kustomize ${{ inputs.config-path }} > "$manifest_file"
+
+        # Apply k8s config
+        run_cmd kubectl apply -f $manifest_file

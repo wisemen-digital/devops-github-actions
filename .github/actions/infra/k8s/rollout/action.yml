@@ -80,22 +80,36 @@ runs:
         DEPLOYMENTS: ${{ inputs.rollout-deployments }}
         LABELS: ${{ inputs.rollout-labels }}
       run: |
+        run_cmd() {
+          case "${{ inputs.vendor }}" in
+            azure)
+              az aks command invoke \
+                --name "${{ inputs.cluster-id }}" \
+                --resource-group "${{ inputs.azure-resource-group }}" \
+                --command "$*"
+              ;;
+            *)
+              eval "$*"
+              ;;
+          esac
+        }
+
         # Restart multiple deployments
         if [ -n "$DEPLOYMENTS" ]; then
           for deployment in ${DEPLOYMENTS//,/ }; do
-            kubectl rollout restart deployment \
+            run_cmd kubectl rollout restart deployment \
               "$deployment" \
               --namespace="${{ inputs.rollout-namespace }}"
           done
 
         # Restart multiple labels
         elif [ -n "$LABELS" ]; then
-          kubectl rollout restart deployment \
+          run_cmd kubectl rollout restart deployment \
             --selector="$LABELS" \
             --namespace="${{ inputs.rollout-namespace }}"
 
         # Restart everything
         else
-          kubectl rollout restart deployment \
+          run_cmd kubectl rollout restart deployment \
             --namespace="${{ inputs.rollout-namespace }}"
         fi
