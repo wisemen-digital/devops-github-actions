@@ -175,7 +175,7 @@ jobs:
         env:
           ACCEPT_EULA: 'Y'
           MSSQL_DB: 'test_db'
-          SA_PASSWORD: 'Password123!'
+          MSSQL_SA_PASSWORD: 'Password123!'
         ports:
           - 1433:1433
         options: >-
@@ -226,8 +226,13 @@ jobs:
         env:
           TYPESENSE_DATA_DIR: '/home'
           TYPESENSE_API_KEY: 'api_key'
-        options: >-
-          --health-cmd="bash -c 'exec 3<>/dev/tcp/localhost/8108 && printf \"GET /health HTTP/1.1\r\nConnection: close\r\n\r\n\" >&3 && head -n1 <&3 | grep 200 && exec 3>&-'"
+        options: |
+          --health-cmd="bash -c '
+            exec 3<>/dev/tcp/localhost/8108 &&
+            printf \"GET /health HTTP/1.1\r\nConnection: close\r\n\r\n\" >&3 &&
+            head -n1 <&3 | grep 200 &&
+            exec 3>&-'
+          "
           --health-interval 10s
           --health-timeout 10s
           --health-retries 5

@@ -49,23 +49,27 @@ runs:
     - name: Validate inputs
       shell: bash
       run: |
+        function validate-required-input {
+          if [ -z "$2" ]; then echo "Missing input: $1"; exit 1; fi
+        }
+
         echo "Validating inputs for vendor: ${{ inputs.vendor }}"
         case "${{ inputs.vendor }}" in
           azure)
-            if [ -z "${{ inputs.azure-client-id }}" ]; then echo 'Missing input: azure-client-id'; exit 1; fi
-            if [ -z "${{ inputs.azure-tenant-id }}" ]; then echo 'Missing input: azure-tenant-id'; exit 1; fi
-            if [ -z "${{ inputs.azure-subscription-id }}" ]; then echo 'Missing input: azure-subscription-id'; exit 1; fi
-            if [ -z "${{ inputs.azure-resource-group }}" ]; then echo 'Missing input: azure-resource-group'; exit 1; fi
+            validate-required-input azure-client-id '${{ inputs.azure-client-id }}'
+            validate-required-input azure-tenant-id '${{ inputs.azure-tenant-id }}'
+            validate-required-input azure-subscription-id '${{ inputs.azure-subscription-id }}'
+            validate-required-input azure-resource-group '${{ inputs.azure-resource-group }}'
             ;;
           digitalocean)
-            if [ -z "${{ inputs.digitalocean-api-token }}" ]; then echo 'Missing input: digitalocean-api-token'; exit 1; fi
+            validate-required-input digitalocean-api-token '${{ inputs.digitalocean-api-token }}'
             ;;
           scaleway)
-            if [ -z "${{ inputs.scaleway-access-key }}" ]; then echo 'Missing input: scaleway-access-key'; exit 1; fi
-            if [ -z "${{ inputs.scaleway-organization-id }}" ]; then echo 'Missing input: scaleway-organization-id'; exit 1; fi
-            if [ -z "${{ inputs.scaleway-project-id }}" ]; then echo 'Missing input: scaleway-project-id'; exit 1; fi
-            if [ -z "${{ inputs.scaleway-region }}" ]; then echo 'Missing input: scaleway-region'; exit 1; fi
-            if [ -z "${{ inputs.scaleway-secret-key }}" ]; then echo 'Missing input: scaleway-secret-key'; exit 1; fi
+            validate-required-input scaleway-access-key '${{ inputs.scaleway-access-key }}'
+            validate-required-input scaleway-organization-id '${{ inputs.scaleway-organization-id }}'
+            validate-required-input scaleway-project-id '${{ inputs.scaleway-project-id }}'
+            validate-required-input scaleway-region '${{ inputs.scaleway-region }}'
+            validate-required-input scaleway-secret-key '${{ inputs.scaleway-secret-key }}'
             ;;
           *)
             echo "Unsupported vendor '${{ inputs.vendor }}'"

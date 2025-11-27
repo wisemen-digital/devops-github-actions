@@ -226,8 +226,13 @@ jobs:
         env:
           TYPESENSE_DATA_DIR: '/home'
           TYPESENSE_API_KEY: 'api_key'
-        options: >-
-          --health-cmd="bash -c 'exec 3<>/dev/tcp/localhost/8108 && printf \"GET /health HTTP/1.1\r\nConnection: close\r\n\r\n\" >&3 && head -n1 <&3 | grep 200 && exec 3>&-'"
+        options: |
+          --health-cmd="bash -c '
+            exec 3<>/dev/tcp/localhost/8108 &&
+            printf \"GET /health HTTP/1.1\r\nConnection: close\r\n\r\n\" >&3 &&
+            head -n1 <&3 | grep 200 &&
+            exec 3>&-'
+          "
           --health-interval 10s
           --health-timeout 10s
           --health-retries 5
@@ -250,7 +255,13 @@ jobs:
       - name: Run tests
         run: |
           touch '.env.test'
-          NODE_OPTIONS='--test-reporter=tap --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-report-junit.xml' pnpm test:pipeline
+          NODE_OPTIONS_ARRAY=(
+            --test-reporter=tap
+            --test-reporter-destination=stdout
+            --test-reporter=junit
+            --test-reporter-destination=test-report-junit.xml
+          )
+          NODE_OPTIONS="${NODE_OPTIONS_ARRAY[*]}" pnpm test:pipeline
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails

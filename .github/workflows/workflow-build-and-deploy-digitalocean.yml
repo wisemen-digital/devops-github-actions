@@ -41,7 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deprecation message
-        run: echo "::warning file=.github/workflows/auto-deploy-to-development.yml,line=11::Deprecated workflow, switch to vendor agnostic workflow."
+        run: |
+          echo "::warning file=.github/workflows/auto-deploy-to-development.yml,line=11::\
+          Deprecated workflow, switch to vendor agnostic workflow."
 
   build-and-deploy:
     uses: wisemen-digital/devops-github-actions/.github/workflows/docker-build-and-deploy.yml@main

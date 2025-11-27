@@ -119,8 +119,8 @@ jobs:
         with:
           vendor: ${{ inputs.vendor }}
           image: ${{ inputs.image }}
-          variant-path: ${{ matrix.variant.path }}
           k8s-labels: ${{ vars.K8S_LABELS }}
+          variant-path: ${{ matrix.variant.path }}
           # Vendor: azure
           azure-user: ${{ secrets.AZURE_CR_USER }}
           azure-token: ${{ secrets.AZURE_CR_TOKEN }}

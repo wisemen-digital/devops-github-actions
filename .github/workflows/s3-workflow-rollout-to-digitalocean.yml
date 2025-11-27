@@ -23,14 +23,15 @@ on:
         description: DigitalOcean API key secret
         required: true
 
-
 jobs:
   deprecation-warning:
     name: Deprecation message
     runs-on: ubuntu-latest
     steps:
       - name: Deprecation message
-        run: echo "::warning file=.github/workflows/rollout-to-s3.yml,line=20::Deprecated workflow, switch to vendor agnostic workflow."
+        run: |
+          echo "::warning file=.github/workflows/rollout-to-s3.yml,line=20::\
+          Deprecated workflow, switch to vendor agnostic workflow."
 
   rollout-to-s3:
     uses: wisemen-digital/devops-github-actions/.github/workflows/infra-s3-rollout.yml@main

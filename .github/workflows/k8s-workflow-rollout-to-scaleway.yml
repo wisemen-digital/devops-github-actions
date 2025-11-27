@@ -35,7 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deprecation message
-        run: echo "::warning file=.github/workflows/rollout-to-k8s.yml,line=20::Deprecated workflow, switch to vendor agnostic workflow."
+        run: |
+          echo "::warning file=.github/workflows/rollout-to-k8s.yml,line=20::\
+          Deprecated workflow, switch to vendor agnostic workflow."
 
   rollout-to-k8s:
     uses: wisemen-digital/devops-github-actions/.github/workflows/infra-k8s-rollout.yml@main

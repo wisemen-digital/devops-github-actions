@@ -56,17 +56,21 @@ jobs:
     steps:
       - name: Validate inputs
         run: |
+          function validate-required-input {
+            if [ -z "$2" ]; then echo "Missing input: $1"; exit 1; fi
+          }
+
           echo "Validating inputs for vendor: ${{ inputs.vendor }}"
           case "${{ inputs.vendor }}" in
             digitalocean)
-              if [ -z "${{ secrets.DIGITALOCEAN_ACCESS_KEY }}" ]; then echo 'Missing secret: DIGITALOCEAN_ACCESS_KEY'; exit 1; fi
-              if [ -z "${{ secrets.DIGITALOCEAN_SECRET_KEY }}" ]; then echo 'Missing secret: DIGITALOCEAN_SECRET_KEY'; exit 1; fi
-              if [ -z "${{ vars.DIGITALOCEAN_REGION }}" ]; then echo 'Missing var: DIGITALOCEAN_REGION'; exit 1; fi
+              validate-required-input DIGITALOCEAN_ACCESS_KEY '${{ secrets.DIGITALOCEAN_ACCESS_KEY }}'
+              validate-required-input DIGITALOCEAN_SECRET_KEY '${{ secrets.DIGITALOCEAN_SECRET_KEY }}'
+              validate-required-input DIGITALOCEAN_REGION '${{ vars.DIGITALOCEAN_REGION }}'
               ;;
             scaleway)
-              if [ -z "${{ secrets.SCALEWAY_ACCESS_KEY }}" ]; then echo 'Missing secret: SCALEWAY_ACCESS_KEY'; exit 1; fi
-              if [ -z "${{ secrets.SCALEWAY_SECRET_KEY }}" ]; then echo 'Missing secret: SCALEWAY_SECRET_KEY'; exit 1; fi
-              if [ -z "${{ vars.SCALEWAY_REGION }}" ]; then echo 'Missing secret: SCALEWAY_REGION'; exit 1; fi
+              validate-required-input SCALEWAY_ACCESS_KEY '${{ secrets.SCALEWAY_ACCESS_KEY }}'
+              validate-required-input SCALEWAY_SECRET_KEY '${{ secrets.SCALEWAY_SECRET_KEY }}'
+              validate-required-input SCALEWAY_REGION '${{ vars.SCALEWAY_REGION }}'
               ;;
             *)
               echo "Unsupported vendor '${{ inputs.vendor }}'"

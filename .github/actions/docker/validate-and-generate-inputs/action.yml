@@ -47,6 +47,37 @@ outputs:
 runs:
   using: composite
   steps:
+    # Validate inputs
+    - name: Validate inputs
+      shell: bash
+      run: |
+        function validate-required-input {
+          if [ -z "$2" ]; then echo "Missing input: $1"; exit 1; fi
+        }
+
+        echo "Validating inputs for vendor: ${{ inputs.vendor }}"
+        case "${{ inputs.vendor }}" in
+          azure)
+            validate-required-input 'azure-client-id' '${{ inputs.azure-client-id }}'
+            validate-required-input 'azure-tenant-id' '${{ inputs.azure-tenant-id }}'
+            validate-required-input 'azure-subscription-id' '${{ inputs.azure-subscription-id }}'
+            validate-required-input 'azure-user' '${{ inputs.azure-user }}'
+            validate-required-input 'azure-token' '${{ inputs.azure-token }}'
+            ;;
+          digitalocean)
+            validate-required-input 'digitalocean-user' '${{ inputs.digitalocean-user }}'
+            validate-required-input 'digitalocean-token' '${{ inputs.digitalocean-token }}'
+            ;;
+          scaleway)
+            validate-required-input 'scaleway-access-key' '${{ inputs.scaleway-access-key }}'
+            validate-required-input 'scaleway-secret-key' '${{ inputs.scaleway-secret-key }}'
+            ;;
+          *)
+            echo "Unsupported vendor '${{ inputs.vendor }}'"
+            exit 1
+            ;;
+        esac
+
     # Generate build matrix
     - name: Checkout
       uses: actions/checkout@v4
@@ -64,30 +95,3 @@ runs:
       if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
       shell: bash
       run: echo 'matrix=[{"environment":"","path":""}]' >> $GITHUB_OUTPUT;
-
-    # Validate inputs
-    - name: Validate inputs
-      shell: bash
-      run: |
-        echo "Validating inputs for vendor: ${{ inputs.vendor }}"
-        case "${{ inputs.vendor }}" in
-          azure)
-            if [ -z "${{ inputs.azure-client-id }}" ]; then echo 'Missing input: azure-client-id'; exit 1; fi
-            if [ -z "${{ inputs.azure-tenant-id }}" ]; then echo 'Missing input: azure-tenant-id'; exit 1; fi
-            if [ -z "${{ inputs.azure-subscription-id }}" ]; then echo 'Missing input: azure-subscription-id'; exit 1; fi
-            if [ -z "${{ inputs.azure-user }}" ]; then echo 'Missing input: azure-user'; exit 1; fi
-            if [ -z "${{ inputs.azure-token }}" ]; then echo 'Missing input: azure-token'; exit 1; fi
-            ;;
-          digitalocean)
-            if [ -z "${{ inputs.digitalocean-user }}" ]; then echo 'Missing input: digitalocean-user'; exit 1; fi
-            if [ -z "${{ inputs.digitalocean-token }}" ]; then echo 'Missing input: digitalocean-token'; exit 1; fi
-            ;;
-          scaleway)
-            if [ -z "${{ inputs.scaleway-access-key }}" ]; then echo 'Missing input: scaleway-access-key'; exit 1; fi
-            if [ -z "${{ inputs.scaleway-secret-key }}" ]; then echo 'Missing input: scaleway-secret-key'; exit 1; fi
-            ;;
-          *)
-            echo "Unsupported vendor '${{ inputs.vendor }}'"
-            exit 1
-            ;;
-        esac

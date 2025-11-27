@@ -23,7 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deprecation message
-        run: echo "::warning file=.github/workflows/pullrequest-check.yml,line=17::Deprecated workflow, switch to new infra workflow path."
+        run: |
+          echo "::warning file=.github/workflows/pullrequest-check.yml,line=17::\
+          Deprecated workflow, switch to new infra workflow path."
 
   k8s-preview:
     uses: wisemen-digital/devops-github-actions/.github/workflows/infra-k8s-preview.yml@main
