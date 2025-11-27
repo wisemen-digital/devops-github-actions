@@ -40,8 +40,14 @@ on:
         required: false
     secrets:
       # Vendor: Azure
-      AZURE_CREDENTIALS:
-        description: Json string for login with an Azure service principal
+      AZURE_CLIENT_ID:
+        description: Azure client ID for login with an Azure service principal
+        required: false
+      AZURE_TENANT_ID:
+        description: Azure tenant ID for login with an Azure service principal
+        required: false
+      AZURE_SUBSCRIPTION_ID:
+        description: Azure subscription ID for login with an Azure service principal
         required: false
       AZURE_CR_USER:
         description: Azure container registry user

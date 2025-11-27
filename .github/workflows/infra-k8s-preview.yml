@@ -7,6 +7,10 @@ name: Build & Test Infrastructure
 
 on:
   workflow_call:
+    secrets:
+      K8S_MODULES_SECRET:
+        description: Token to access github modules repositories
+        required: false
 
 jobs:
   preview-k8s:
@@ -20,6 +24,7 @@ jobs:
           filter-file: .github/k8s-rollout-filters.yaml
       - name: Ensure access to private repositories
         shell: bash
+        if: "${{ secrets.K8S_MODULES_SECRET != '' }}"
         run: |
           AUTH="x-access-token:${{ secrets.K8S_MODULES_SECRET }}"
           git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
