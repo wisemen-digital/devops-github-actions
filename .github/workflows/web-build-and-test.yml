@@ -27,9 +27,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-impacted:
+    name: Detect Impacted Workspaces
+    runs-on: ubuntu-latest
+
+    outputs:
+      should-run: ${{ steps.detect.outputs.should-run }}
+      filters: ${{ steps.detect.outputs.filters }}
+    steps:
+      - name: Detect impacted workspaces
+        id: detect
+        uses: wisemen-digital/devops-github-actions/.github/actions/monorepo/detect-workspaces@feature/monorepo-v2
+        with:
+          script: build:web
   # First lint & typecheck
   lint:
     name: Lint Application
+    needs: [detect-impacted]
+    if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -45,9 +60,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint
-        run: pnpm lint
+        run: |
+          set -euo pipefail
+
+          FILTER_ARGS=()
+
+          if [[ -n "${FILTERS:-}" && "${FILTERS}" != "[]" && "${FILTERS}" != '[{"environment":"","path":""}]' ]]; then
+            while IFS= read -r filter; do
+              [[ -n "$filter" ]] || continue
+              FILTER_ARGS+=(--filter "$filter")
+            done < <(echo "$FILTERS" | jq -r '.[].path // empty')
+          fi
+
+          pnpm "${FILTER_ARGS[@]}" lint:web
   typecheck:
     name: Typecheck Application
+    needs: [detect-impacted]
+    if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -63,12 +92,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Typecheck
-        run: pnpm type-check
+        run: |
+          set -euo pipefail
+
+          FILTER_ARGS=()
+
+          if [[ -n "${FILTERS:-}" && "${FILTERS}" != "[]" && "${FILTERS}" != '[{"environment":"","path":""}]' ]]; then
+            while IFS= read -r filter; do
+              [[ -n "$filter" ]] || continue
+              FILTER_ARGS+=(--filter "$filter")
+            done < <(echo "$FILTERS" | jq -r '.[].path // empty')
+          fi
+
+          pnpm "${FILTER_ARGS[@]}" type-check
 
   # Then build & test
   build:
     name: Build Application
-    needs: [lint, typecheck]
+    needs: [lint, typecheck, detect-impacted]
+    if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -86,7 +128,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Run build
-        run: pnpm build:web
+        run: |
+          set -euo pipefail
+
+          FILTER_ARGS=()
+
+          if [[ -n "${FILTERS:-}" && "${FILTERS}" != "[]" && "${FILTERS}" != '[{"environment":"","path":""}]' ]]; then
+            while IFS= read -r filter; do
+              [[ -n "$filter" ]] || continue
+              FILTER_ARGS+=(--filter "$filter")
+            done < <(echo "$FILTERS" | jq -r '.[].path // empty')
+          fi
+
+          pnpm "${FILTER_ARGS[@]}" build:web
       # Archive
       - name: Store archive
         uses: actions/upload-artifact@v4
@@ -95,17 +149,20 @@ jobs:
           path: |
             **/dist
           retention-days: 3
-      # - name: Prep. Playwright if needed
-      #   id: prep-playwright
-      #   run: |
-      #     if test -f 'playwright.config.ts'; then
-      #       echo "playwright-configured=true" >> "$GITHUB_OUTPUT"
-      #     else
-      #       echo "playwright-configured=false" >> "$GITHUB_OUTPUT"
-      #     fi
+      - name: Prep. Playwright if needed
+        id: prep-playwright
+        run: |
+          # if test -f 'playwright.config.ts'; then
+          #   echo "playwright-configured=true" >> "$GITHUB_OUTPUT"
+          # else
+          #   echo "playwright-configured=false" >> "$GITHUB_OUTPUT"
+          # fi
+
+          echo "playwright-configured=true" >> "$GITHUB_OUTPUT"
   unit-test:
     name: Test Application
-    needs: [build]
+    needs: [build, detect-impacted]
+    if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
     # if: needs.build.outputs.playwright-configured == 'true'
     runs-on: ubuntu-latest
     container:
@@ -134,10 +191,22 @@ jobs:
           fi
       - name: Run tests
         run: |
+          set -euo pipefail
+
           if [ "$RUNNER_DEBUG" != '1' ]; then
             TEST_REPORTER='--reporter=junit --outputFile=test-report-junit.xml'
           fi
-          pnpm vitest --run $TEST_REPORTER
+
+          FILTER_ARGS=()
+
+          if [[ -n "${FILTERS:-}" && "${FILTERS}" != "[]" && "${FILTERS}" != '[{"environment":"","path":""}]' ]]; then
+            while IFS= read -r filter; do
+              [[ -n "$filter" ]] || continue
+              FILTER_ARGS+=(--filter "$filter")
+            done < <(echo "$FILTERS" | jq -r '.[].path // empty')
+          fi
+
+          pnpm "${FILTER_ARGS[@]}" test:unit --run $TEST_REPORTER
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
@@ -148,7 +217,8 @@ jobs:
   # Finally run E2E tests if available
   e2e-test:
     name: Test Application (E2E)
-    needs: [build]
+    needs: [build, detect-impacted]
+    if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
     # if: needs.build.outputs.playwright-configured == 'true'
     runs-on: ubuntu-latest
     container:
@@ -162,7 +232,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: app-build
-          path: dist
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Install Node.js
@@ -181,4 +250,16 @@ jobs:
             sed -i -e 's/ENVIRONMENT=.*/ENVIRONMENT=ci-test-e2e/g' '.env'
           fi
       - name: Run tests
-        run: pnpm exec playwright test --reporter=github
+        run: |
+          set -euo pipefail
+
+          FILTER_ARGS=()
+
+          if [[ -n "${FILTERS:-}" && "${FILTERS}" != "[]" && "${FILTERS}" != '[{"environment":"","path":""}]' ]]; then
+            while IFS= read -r filter; do
+              [[ -n "$filter" ]] || continue
+              FILTER_ARGS+=(--filter "$filter")
+            done < <(echo "$FILTERS" | jq -r '.[].path // empty')
+          fi
+
+          pnpm "${FILTER_ARGS[@]}" test:e2e --reporter=github

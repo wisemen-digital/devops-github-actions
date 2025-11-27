@@ -1,0 +1,89 @@
+---
+name: Detect impacted workspaces
+description: Detect impacted workspaces in a monorepo using pnpm
+inputs:
+  script:
+    description: The pnpm script to check for in the impacted workspaces
+    required: true
+    default: build:api
+outputs:
+  should-run:
+    description: Whether any workspace requires running the workflow
+    value: ${{ steps.check-script.outputs.should-run }}
+  filters:
+    description: The filters to apply to limit the impacted workspaces
+    value: ${{ steps.monorepo-matrix.outputs.matrix || steps.normalrepo-matrix.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Monorepo Matrix check
+      id: monorepo-matrix
+      if: hashFiles('.github/monorepo-rollout-filters.yaml') != ''
+      uses: wisemen-digital/devops-ga-changed-paths-filter@main
+      with:
+        filter-file: .github/monorepo-rollout-filters.yaml
+    - name: Normal Repo Fallback
+      id: normalrepo-matrix
+      if: hashFiles('.github/monorepo-rollout-filters.yaml') == ''
+      shell: bash
+      run: echo 'matrix=[{"environment":"","path":""}]' >> $GITHUB_OUTPUT;
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+    - name: Check pnpm script presence
+      id: check-script
+      shell: bash
+      env:
+        SCRIPT: ${{ inputs.script }}
+        MATRIX: ${{ steps.monorepo-matrix.outputs.matrix || steps.normalrepo-matrix.outputs.matrix }}
+      run: |
+        set -euo pipefail
+
+        if [[ -z "$MATRIX" || "$MATRIX" == "[]" ]]; then
+          echo "should-run=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        if [[ "$MATRIX" == '[{"environment":"","path":""}]' ]]; then
+          echo "should-run=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        for cmd in pnpm jq; do
+          if ! command -v "$cmd" >/dev/null; then
+            echo "$cmd is required but not found on PATH." >&2
+            exit 1
+          fi
+        done
+
+        FILTERS=$(echo "$MATRIX" | jq -r '.[].path')
+
+        FILTER_ARGS=()
+        for filter in $FILTERS; do
+          FILTER_ARGS+=(--filter "$filter")
+        done
+
+        packages=$(pnpm m ls -r --json "${FILTER_ARGS[@]}" | jq -r '.[].path // empty')
+
+        count=0
+
+        while IFS= read -r pkg; do
+          manifest="$pkg/package.json"
+
+          if [[ -f "$manifest" ]] && jq -e --arg script "$SCRIPT" '.scripts[$script]? != null' "$manifest" >/dev/null; then
+            count=$((count + 1))
+          fi
+        done <<< "$packages"
+
+        if [[ "$count" -gt 0 ]]; then
+          echo "should-run=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        else
+          echo "should-run=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
