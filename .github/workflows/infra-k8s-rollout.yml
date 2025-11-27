@@ -77,7 +77,9 @@ jobs:
           config-path: ${{ matrix.deployment.path }}
           github-access-token: ${{ secrets.K8S_MODULES_SECRET }}
           # Vendor: azure
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
           # Vendor: digitalocean
           digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}

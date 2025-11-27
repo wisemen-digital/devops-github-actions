@@ -10,8 +10,14 @@ inputs:
     description: List of variants to build (folders in monorepo, separated by commas)
     required: false
   # Vendor: Azure
-  azure-credentials:
-    description: JSON string for login with an Azure service principal
+  azure-client-id:
+    description: Azure client ID for login with an Azure service principal
+    required: false
+  azure-tenant-id:
+    description: Azure tenant ID for login with an Azure service principal
+    required: false
+  azure-subscription-id:
+    description: Azure subscription ID for login with an Azure service principal
     required: false
   azure-user:
     description: Azure container registry user
@@ -66,7 +72,9 @@ runs:
         echo "Validating inputs for vendor: ${{ inputs.vendor }}"
         case "${{ inputs.vendor }}" in
           azure)
-            if [ -z "${{ inputs.azure-credentials }}" ]; then echo 'Missing input: azure-credentials'; exit 1; fi
+            if [ -z "${{ inputs.azure-client-id }}" ]; then echo 'Missing input: azure-client-id'; exit 1; fi
+            if [ -z "${{ inputs.azure-tenant-id }}" ]; then echo 'Missing input: azure-tenant-id'; exit 1; fi
+            if [ -z "${{ inputs.azure-subscription-id }}" ]; then echo 'Missing input: azure-subscription-id'; exit 1; fi
             if [ -z "${{ inputs.azure-user }}" ]; then echo 'Missing input: azure-user'; exit 1; fi
             if [ -z "${{ inputs.azure-token }}" ]; then echo 'Missing input: azure-token'; exit 1; fi
             ;;
