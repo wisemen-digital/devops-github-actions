@@ -1,0 +1,123 @@
+---
+name: Prep. Docker environment
+description: |
+  Prepare the environment for interaction with Docker
+inputs:
+  vendor:
+    description: The vendor to communicate with (azure, digitalocean, scaleway)
+    required: true
+  container-registry:
+    description: Container registry endpoint (fallback to Docker Hub)
+    required: false
+  github-access-token:
+    description: GitHub access token (GITHUB_TOKEN)
+    required: false
+  image:
+    description: Image name (fallback to repository name)
+    required: false
+  k8s-labels:
+    description: List of labels to rollout (comma separated)
+    required: false
+  prepare-for-building:
+    description: If `true` prepare for building a docker image
+    required: false
+    default: false
+  variant-path:
+    description: Variant path
+    required: false
+  # Vendor: Azure
+  azure-user:
+    description: Azure container registry user
+    required: false
+  azure-token:
+    description: Azure container registry token
+    required: false
+  # Vendor: DigitalOcean
+  digitalocean-user:
+    description: DigitalOcean user email
+    required: false
+  digitalocean-token:
+    description: DigitalOcean API token
+    required: false
+  # Vendor: Scaleway
+  scaleway-secret-key:
+    description: Scaleway API key secret
+    required: false
+outputs:
+  image:
+    description: Docker image name
+    value: ${{ steps.values.outputs.image }}
+  registry:
+    description: Container registry
+    value: ${{ steps.values.outputs.registry }}
+  k8s-labels:
+    description: K8S Rollout labels
+    value: ${{ steps.values.outputs.k8s_labels }}
+
+runs:
+  using: composite
+  steps:
+    # Calculate Values
+    - name: Calculate values
+      shell: bash
+      id: values
+      run: |
+        # Image name (including variant suffix)
+        if [ -z "${{ inputs.variant-path }}" ]; then
+          image_suffix=""
+        else
+          image_suffix="-${{ inputs.variant-path }}"
+        fi
+        image="$(basename ${{ inputs.image || github.repository }})$image_suffix"
+        echo "image=${image}" >> "$GITHUB_OUTPUT"
+
+        # Registry (fall back to docker.io)
+        registry=${{ inputs.container-registry || 'docker.io' }}
+        echo "registry=${registry}" >> "$GITHUB_OUTPUT"
+
+        # Registry credentials (vendor dependant)
+        case "${{ inputs.vendor }}" in
+          azure)
+            echo "registry_username=${{ inputs.azure-user }}" >> "$GITHUB_OUTPUT"
+            echo "registry_password=${{ inputs.azure-token }}" >> "$GITHUB_OUTPUT"
+            ;;
+          digitalocean)
+            echo "registry_username=${{ inputs.digitalocean-user }}" >> "$GITHUB_OUTPUT"
+            echo "registry_password=${{ inputs.digitalocean-token }}" >> "$GITHUB_OUTPUT"
+            ;;
+          scaleway)
+            echo "registry_username=nologin" >> "$GITHUB_OUTPUT"
+            echo "registry_password=${{ inputs.scaleway-secret-key }}" >> "$GITHUB_OUTPUT"
+            ;;
+        esac
+
+        # Transform K8S labels
+        if [ -z "${{ inputs.variant-path }}" ]; then
+          echo "k8s_labels=${{ inputs.k8s-labels }}" >> "$GITHUB_OUTPUT"
+        else
+          labels=(${{ inputs.k8s-labels }} variant=${{ inputs.variant-path }})
+          echo "k8s_labels=$(IFS=,;echo "${labels[*]}")" >> "$GITHUB_OUTPUT"
+        fi
+    # Prep. docker environment
+    - name: Checkout
+      if: ${{ inputs.prepare-for-building == 'true' }}
+      uses: actions/checkout@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    - name: Set up QEMU
+      if: ${{ inputs.prepare-for-building == 'true' }}
+      uses: docker/setup-qemu-action@v3
+    # Authenticate
+    - name: Login to GitHub registry
+      if: ${{ inputs.prepare-for-building == 'true' }}
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.github-access-token }}
+    - name: Login to custom registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ steps.values.outputs.registry }}
+        username: ${{ steps.values.outputs.registry_username }}
+        password: ${{ steps.values.outputs.registry_password }}
