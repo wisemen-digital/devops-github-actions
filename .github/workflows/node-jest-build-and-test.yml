@@ -71,6 +71,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  deprecation-warning:
+    name: Deprecation message
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deprecation message
+        run: |
+          echo "::warning file=.github/workflows/pullrequest-check.yml,line=20::\
+          Deprecated workflow, switch to normal node workflow."
+
   # First lint & build
   lint:
     name: Lint Application
@@ -255,4 +264,16 @@ jobs:
       - name: Run tests
         run: |
           touch '.env.test'
-          pnpm test:pipeline
+          NODE_OPTIONS_ARRAY=(
+            --test-reporter=tap
+            --test-reporter-destination=stdout
+            --test-reporter=junit
+            --test-reporter-destination=test-report-junit.xml
+          )
+          NODE_OPTIONS="${NODE_OPTIONS_ARRAY[*]}" pnpm test:pipeline
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v4
+        if: always()  # always run even if the previous step fails
+        with:
+          report_paths: test-report-junit.xml
+          require_tests: true
