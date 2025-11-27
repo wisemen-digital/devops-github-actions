@@ -86,5 +86,16 @@ runs:
         AUTH="x-access-token:${{ inputs.github-access-token }}"
         git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
     - name: Apply config
+      if: ${{ inputs.vendor != 'azure' }}
       shell: bash
       run: kubectl apply -k ${{ inputs.config-path }}
+    - name: Apply config
+      if: ${{ inputs.vendor == 'azure' }}
+      shell: bash
+      run: |
+        kubectl kustomize ${{ inputs.config-path }} > manifest.yaml
+        az aks command invoke \
+          --name ${{ inputs.cluster-id }} \
+          --resource-group ${{ inputs.azure-resource-group }} \
+          --file manifest.yaml \
+          --command "kubectl apply -f manifest.yaml"
