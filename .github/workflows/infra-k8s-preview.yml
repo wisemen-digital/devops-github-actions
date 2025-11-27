@@ -24,10 +24,11 @@ jobs:
           filter-file: .github/k8s-rollout-filters.yaml
       - name: Ensure access to private repositories
         shell: bash
-        if: "${{ secrets.K8S_MODULES_SECRET != '' }}"
         run: |
-          AUTH="x-access-token:${{ secrets.K8S_MODULES_SECRET }}"
-          git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
+          if [ "${{ secrets.K8S_MODULES_SECRET }}" != "null" ]; then
+            AUTH="x-access-token:${{ secrets.K8S_MODULES_SECRET }}"
+            git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
+          fi
       - name: Generate diffs
         id: preview
         run: |
