@@ -82,6 +82,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
     - name: Azure Login
+      if: ${{ inputs.vendor == 'azure' }}
       uses: azure/login@v2
       with:
         client-id: ${{ inputs.azure-client-id }}
