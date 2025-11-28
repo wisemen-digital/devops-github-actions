@@ -19,12 +19,6 @@ inputs:
   azure-subscription-id:
     description: Azure subscription ID for login with an Azure service principal
     required: false
-  azure-user:
-    description: Azure container registry user
-    required: false
-  azure-token:
-    description: Azure container registry token
-    required: false
   # Vendor: DigitalOcean
   digitalocean-user:
     description: DigitalOcean user email
@@ -75,8 +69,6 @@ runs:
             if [ -z "${{ inputs.azure-client-id }}" ]; then echo 'Missing input: azure-client-id'; exit 1; fi
             if [ -z "${{ inputs.azure-tenant-id }}" ]; then echo 'Missing input: azure-tenant-id'; exit 1; fi
             if [ -z "${{ inputs.azure-subscription-id }}" ]; then echo 'Missing input: azure-subscription-id'; exit 1; fi
-            if [ -z "${{ inputs.azure-user }}" ]; then echo 'Missing input: azure-user'; exit 1; fi
-            if [ -z "${{ inputs.azure-token }}" ]; then echo 'Missing input: azure-token'; exit 1; fi
             ;;
           digitalocean)
             if [ -z "${{ inputs.digitalocean-user }}" ]; then echo 'Missing input: digitalocean-user'; exit 1; fi
