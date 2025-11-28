@@ -19,12 +19,6 @@ inputs:
   azure-subscription-id:
     description: Azure subscription ID for login with an Azure service principal
     required: false
-  azure-user:
-    description: Azure container registry user
-    required: false
-  azure-token:
-    description: Azure container registry token
-    required: false
   # Vendor: DigitalOcean
   digitalocean-user:
     description: DigitalOcean user email
@@ -61,8 +55,6 @@ runs:
             validate-required-input 'azure-client-id' '${{ inputs.azure-client-id }}'
             validate-required-input 'azure-tenant-id' '${{ inputs.azure-tenant-id }}'
             validate-required-input 'azure-subscription-id' '${{ inputs.azure-subscription-id }}'
-            validate-required-input 'azure-user' '${{ inputs.azure-user }}'
-            validate-required-input 'azure-token' '${{ inputs.azure-token }}'
             ;;
           digitalocean)
             validate-required-input 'digitalocean-user' '${{ inputs.digitalocean-user }}'
