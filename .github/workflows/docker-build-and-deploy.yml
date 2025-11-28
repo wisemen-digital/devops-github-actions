@@ -51,12 +51,6 @@ on:
       AZURE_SUBSCRIPTION_ID:
         description: Azure subscription ID for login with an Azure service principal
         required: false
-      AZURE_CR_USER:
-        description: Azure container registry user
-        required: false
-      AZURE_CR_TOKEN:
-        description: Azure container registry token
-        required: false
       # Vendor: DigitalOcean
       DIGITALOCEAN_API_USER:
         description: DigitalOcean user email
@@ -89,8 +83,6 @@ jobs:
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          azure-user: ${{ secrets.AZURE_CR_USER }}
-          azure-token: ${{ secrets.AZURE_CR_TOKEN }}
           # Vendor: digitalocean
           digitalocean-user: ${{ secrets.DIGITALOCEAN_API_USER }}
           digitalocean-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
@@ -121,8 +113,9 @@ jobs:
           prepare-for-building: true
           variant-path: ${{ matrix.variant.path }}
           # Vendor: azure
-          azure-user: ${{ secrets.AZURE_CR_USER }}
-          azure-token: ${{ secrets.AZURE_CR_TOKEN }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           # Vendor: digitalocean
           digitalocean-user: ${{ secrets.DIGITALOCEAN_API_USER }}
           digitalocean-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
