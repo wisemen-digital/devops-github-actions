@@ -75,6 +75,7 @@ runs:
 
     # Rollout
     - name: Restart deployments
+      if: ${{ inputs.vendor != 'azure' }}
       shell: bash
       env:
         DEPLOYMENTS: ${{ inputs.rollout-deployments }}
@@ -98,4 +99,36 @@ runs:
         else
           kubectl rollout restart deployment \
             --namespace="${{ inputs.rollout-namespace }}"
+        fi
+    - name: Apply config
+      if: ${{ inputs.vendor == 'azure' }}
+      shell: bash
+      run: |
+        # Restart multiple deployments
+        if [ -n "$DEPLOYMENTS" ]; then
+          for deployment in ${DEPLOYMENTS//,/ }; do
+            az aks command invoke \
+            --name ${{ inputs.cluster-id }} \
+            --resource-group ${{ inputs.azure-resource-group }} \
+            --command "kubectl rollout restart deployment \
+                        "$deployment" \
+                        --namespace="${{ inputs.rollout-namespace }}""
+          done
+
+        # Restart multiple labels
+        elif [ -n "$LABELS" ]; then
+          az aks command invoke \
+            --name ${{ inputs.cluster-id }} \
+            --resource-group ${{ inputs.azure-resource-group }} \
+            --command "kubectl rollout restart deployment \
+                        --selector="$LABELS" \
+                        --namespace="${{ inputs.rollout-namespace }}""
+
+        # Restart everything
+        else
+          az aks command invoke \
+            --name ${{ inputs.cluster-id }} \
+            --resource-group ${{ inputs.azure-resource-group }} \
+            --command "kubectl rollout restart deployment \
+            --namespace="${{ inputs.rollout-namespace }}""
         fi
