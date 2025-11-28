@@ -30,8 +30,14 @@ on:
         description: Token to access github modules repositories
         required: true
       # Vendor: Azure
-      AZURE_CREDENTIALS:
-        description: Json string for login with an Azure service principal
+      AZURE_CLIENT_ID:
+        description: Azure client ID for login with an Azure service principal
+        required: false
+      AZURE_TENANT_ID:
+        description: Azure tenant ID for login with an Azure service principal
+        required: false
+      AZURE_SUBSCRIPTION_ID:
+        description: Azure subscription ID for login with an Azure service principal
         required: false
       # Vendor: DigitalOcean
       DIGITALOCEAN_API_TOKEN:
@@ -77,7 +83,9 @@ jobs:
           config-path: ${{ matrix.deployment.path }}
           github-access-token: ${{ secrets.K8S_MODULES_SECRET }}
           # Vendor: azure
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
           # Vendor: digitalocean
           digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}

@@ -40,8 +40,14 @@ on:
         required: false
     secrets:
       # Vendor: Azure
-      AZURE_CREDENTIALS:
-        description: Json string for login with an Azure service principal
+      AZURE_CLIENT_ID:
+        description: Azure client ID for login with an Azure service principal
+        required: false
+      AZURE_TENANT_ID:
+        description: Azure tenant ID for login with an Azure service principal
+        required: false
+      AZURE_SUBSCRIPTION_ID:
+        description: Azure subscription ID for login with an Azure service principal
         required: false
       AZURE_CR_USER:
         description: Azure container registry user
@@ -78,7 +84,9 @@ jobs:
           vendor: ${{ inputs.vendor }}
           image-variants: ${{ inputs.image-variants }}
           # Vendor: azure
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azure-user: ${{ secrets.AZURE_CR_USER }}
           azure-token: ${{ secrets.AZURE_CR_TOKEN }}
           # Vendor: digitalocean
@@ -134,7 +142,9 @@ jobs:
           rollout-labels: ${{ steps.prep-environment.outputs.rollout-labels }}
           rollout-namespace: ${{ vars.K8S_NAMESPACE }}
           # Vendor: azure
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azure-resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
           # Vendor: digitalocean
           digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}

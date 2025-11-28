@@ -9,8 +9,14 @@ inputs:
     description: Target cluster ID
     required: true
   # Vendor: Azure
-  azure-credentials:
-    description: Json string for login with an Azure service principal
+  azure-client-id:
+    description: Azure client ID for login with an Azure service principal
+    required: false
+  azure-tenant-id:
+    description: Azure tenant ID for login with an Azure service principal
+    required: false
+  azure-subscription-id:
+    description: Azure subscription ID for login with an Azure service principal
     required: false
   azure-resource-group:
     description: Resource group name
@@ -46,7 +52,9 @@ runs:
         echo "Validating inputs for vendor: ${{ inputs.vendor }}"
         case "${{ inputs.vendor }}" in
           azure)
-            if [ -z "${{ inputs.azure-credentials }}" ]; then echo 'Missing input: azure-credentials'; exit 1; fi
+            if [ -z "${{ inputs.azure-client-id }}" ]; then echo 'Missing input: azure-client-id'; exit 1; fi
+            if [ -z "${{ inputs.azure-tenant-id }}" ]; then echo 'Missing input: azure-tenant-id'; exit 1; fi
+            if [ -z "${{ inputs.azure-subscription-id }}" ]; then echo 'Missing input: azure-subscription-id'; exit 1; fi
             if [ -z "${{ inputs.azure-resource-group }}" ]; then echo 'Missing input: azure-resource-group'; exit 1; fi
             ;;
           digitalocean)
@@ -73,11 +81,13 @@ runs:
         kubelogin-version: 'latest'
       env:
         GITHUB_TOKEN: ${{ github.token }}
-    - name: Azure login
+    - name: Azure Login
       if: ${{ inputs.vendor == 'azure' }}
       uses: azure/login@v2
       with:
-        creds: ${{ inputs.azure-credentials }}
+        client-id: ${{ inputs.azure-client-id }}
+        tenant-id: ${{ inputs.azure-tenant-id }}
+        subscription-id: ${{ inputs.azure-subscription-id }}
     - name: Save Azure kubeconfig
       if: ${{ inputs.vendor == 'azure' }}
       uses: azure/aks-set-context@v4

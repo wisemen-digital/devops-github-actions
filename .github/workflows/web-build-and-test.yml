@@ -26,6 +26,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# defaults:
+#   run:
+#     shell: bash
+
 jobs:
   detect-impacted:
     name: Detect Impacted Workspaces
@@ -60,6 +64,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint
+        env:
+          FILTERS: ${{ needs.detect-impacted.outputs.filters }}
         run: |
           set -euo pipefail
 
@@ -92,6 +98,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Typecheck
+        env:
+          FILTERS: ${{ needs.detect-impacted.outputs.filters }}
         run: |
           set -euo pipefail
 
@@ -113,8 +121,8 @@ jobs:
     if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    outputs:
-      playwright-configured: ${{ steps.prep-playwright.outputs.playwright-configured }}
+    # outputs:
+    #   playwright-configured: ${{ steps.prep-playwright.outputs.playwright-configured }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -128,6 +136,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Run build
+        env:
+          FILTERS: ${{ needs.detect-impacted.outputs.filters }}
         run: |
           set -euo pipefail
 
@@ -149,16 +159,16 @@ jobs:
           path: |
             **/dist
           retention-days: 3
-      - name: Prep. Playwright if needed
-        id: prep-playwright
-        run: |
-          # if test -f 'playwright.config.ts'; then
-          #   echo "playwright-configured=true" >> "$GITHUB_OUTPUT"
-          # else
-          #   echo "playwright-configured=false" >> "$GITHUB_OUTPUT"
-          # fi
+      # - name: Prep. Playwright if needed
+      #   id: prep-playwright
+      #   run: |
+      #     # if test -f 'playwright.config.ts'; then
+      #     #   echo "playwright-configured=true" >> "$GITHUB_OUTPUT"
+      #     # else
+      #     #   echo "playwright-configured=false" >> "$GITHUB_OUTPUT"
+      #     # fi
 
-          echo "playwright-configured=true" >> "$GITHUB_OUTPUT"
+      #     echo "playwright-configured=true" >> "$GITHUB_OUTPUT"
   unit-test:
     name: Test Application
     needs: [build, detect-impacted]
@@ -190,10 +200,13 @@ jobs:
             sed -i -e 's/ENVIRONMENT=.*/ENVIRONMENT=ci-test-unit/g' '.env'
           fi
       - name: Run tests
+        shell: bash
+        env:
+          FILTERS: ${{ needs.detect-impacted.outputs.filters }}
         run: |
           set -euo pipefail
 
-          if [ "$RUNNER_DEBUG" != '1' ]; then
+          if [ "${RUNNER_DEBUG:-}" != '1' ]; then
             TEST_REPORTER='--reporter=junit --outputFile=test-report-junit.xml'
           fi
 
@@ -219,7 +232,6 @@ jobs:
     name: Test Application (E2E)
     needs: [build, detect-impacted]
     if: ${{ needs.detect-impacted.outputs.should-run == 'true' }}
-    # if: needs.build.outputs.playwright-configured == 'true'
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.test-playwright-image }}
@@ -250,6 +262,9 @@ jobs:
             sed -i -e 's/ENVIRONMENT=.*/ENVIRONMENT=ci-test-e2e/g' '.env'
           fi
       - name: Run tests
+        shell: bash
+        env:
+          FILTERS: ${{ needs.detect-impacted.outputs.filters }}
         run: |
           set -euo pipefail
 

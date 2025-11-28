@@ -110,6 +110,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-eslint
       - name: Lint
+        env:
+          FILTERS: ${{ needs.detect-impacted.outputs.filters }}
         run: |
           set -euo pipefail
 
@@ -210,7 +212,7 @@ jobs:
   # Then test
   test:
     name: Test Application
-    needs: [lint, build, prep-test]
+    needs: [lint, build, prep-test, detect-impacted]
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
     services:
@@ -292,6 +294,8 @@ jobs:
         with:
           name: app-build
       - name: Run tests
+        env:
+          FILTERS: ${{ needs.detect-impacted.outputs.filters }}
         run: |
           set -euo pipefail
 

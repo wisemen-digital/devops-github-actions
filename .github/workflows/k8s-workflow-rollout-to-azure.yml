@@ -17,9 +17,15 @@ on:
         required: true
         type: string
     secrets:
-      AZURE_CREDENTIALS:
-        description: Json string for login with an Azure service principal
-        required: true
+      AZURE_CLIENT_ID:
+        description: Azure client ID for login with an Azure service principal
+        required: false
+      AZURE_TENANT_ID:
+        description: Azure tenant ID for login with an Azure service principal
+        required: false
+      AZURE_SUBSCRIPTION_ID:
+        description: Azure subscription ID for login with an Azure service principal
+        required: false
       K8S_MODULES_SECRET:
         description: Token to access github modules repositories
         required: true
@@ -38,5 +44,7 @@ jobs:
       vendor: azure
       cluster-deployments: ${{ inputs.cluster-deployments }}
     secrets:
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       K8S_MODULES_SECRET: ${{ secrets.K8S_MODULES_SECRET }}

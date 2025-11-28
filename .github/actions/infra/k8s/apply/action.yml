@@ -19,8 +19,14 @@ inputs:
     description: GitHub access token (GITHUB_TOKEN)
     required: true
   # Vendor: Azure
-  azure-credentials:
-    description: Json string for login with an Azure service principal
+  azure-client-id:
+    description: Azure client ID for login with an Azure service principal
+    required: false
+  azure-tenant-id:
+    description: Azure tenant ID for login with an Azure service principal
+    required: false
+  azure-subscription-id:
+    description: Azure subscription ID for login with an Azure service principal
     required: false
   azure-resource-group:
     description: Resource group name
@@ -55,7 +61,9 @@ runs:
         vendor: ${{ inputs.vendor }}
         cluster-id: ${{ inputs.cluster-id }}
         # Vendor: azure
-        azure-credentials: ${{ inputs.azure-credentials }}
+        azure-client-id: ${{ inputs.azure-client-id }}
+        azure-tenant-id: ${{ inputs.azure-tenant-id }}
+        azure-subscription-id: ${{ inputs.azure-subscription-id }}
         azure-resource-group: ${{ inputs.azure-resource-group }}
         # Vendor: digitalocean
         digitalocean-api-token: ${{ inputs.digitalocean-api-token }}
@@ -78,5 +86,16 @@ runs:
         AUTH="x-access-token:${{ inputs.github-access-token }}"
         git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
     - name: Apply config
+      if: ${{ inputs.vendor != 'azure' }}
       shell: bash
       run: kubectl apply -k ${{ inputs.config-path }}
+    - name: Apply config
+      if: ${{ inputs.vendor == 'azure' }}
+      shell: bash
+      run: |
+        kubectl kustomize ${{ inputs.config-path }} > manifest.yaml
+        az aks command invoke \
+          --name ${{ inputs.cluster-id }} \
+          --resource-group ${{ inputs.azure-resource-group }} \
+          --file manifest.yaml \
+          --command "kubectl apply -f manifest.yaml"
