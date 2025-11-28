@@ -67,6 +67,7 @@ on:
 jobs:
   validate-and-generate-matrix:
     name: Validate inputs & generate build matrix
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     outputs:
       variants: ${{ steps.gen-matrix.outputs.variants }}
