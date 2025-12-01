@@ -98,7 +98,7 @@ jobs:
     strategy:
       matrix:
         variant: ${{ fromJson(needs.validate-and-generate-matrix.outputs.variants) }}
-    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
+    runs-on: self-hosted
     environment: ${{ inputs.environment }}
     steps:
       # Setup

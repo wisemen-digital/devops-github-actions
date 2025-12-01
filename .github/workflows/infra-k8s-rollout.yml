@@ -74,7 +74,7 @@ jobs:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
     if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
-    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
+    runs-on: self-hosted
     environment: ${{ matrix.deployment.environment }}
     steps:
       - name: Apply Configuration
