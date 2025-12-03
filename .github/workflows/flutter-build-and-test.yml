@@ -1,0 +1,157 @@
+---
+name: Format, Build & Test Flutter app
+
+#
+# Format, build, analyze & test a Flutter application
+# Note: will create artifacts for generated code and coverage reports.
+#
+
+on:
+  workflow_call:
+    inputs:
+      build-timeout:
+        description: Time (in minutes) after which the test job will timeout
+        default: 5
+        type: number
+      test-timeout:
+        description: Time (in minutes) after which the test job will timeout
+        default: 5
+        type: number
+      test-coverage:
+        description: Minimum test coverage required (defaults to 0)
+        default: 0
+        type: number
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Run flutter pub get
+        run: flutter pub get
+      - name: Verify formatting
+        run: dart format . --set-exit-if-changed
+      - name: Generate intl
+        run: |
+          dart pub global activate intl_utils
+          dart pub global run intl_utils:generate
+      - name: Upload generated code
+        uses: actions/upload-artifact@v4
+        with:
+          name: intl
+          path: lib/generated
+
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
+    steps:
+      - name: Generate Matrix
+        id: changed-paths-filter
+        uses: wisemen-digital/devops-ga-changed-paths-filter@main
+        with:
+          filter-file: .github/package-filters.yaml
+
+  generate-code:
+    needs: [generate-matrix, verify-formatting]
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.build-timeout }}
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Run flutter pub get
+        run: flutter pub get
+      - name: Generate ${{ matrix.deployment.path }} code
+        working-directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
+        run: dart pub run build_runner build -d
+      - name: Upload generated code
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.deployment.path == '.' && 'app-lib' || matrix.deployment.path }}
+          path: ${{ matrix.deployment.path == '.' && 'lib' || format('packages/{0}', matrix.deployment.path) }}
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: [generate-code]
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: merged-artifacts
+          delete-merged: true
+          separate-directories: true
+
+  test:
+    needs: [generate-matrix, generate-code, merge]
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.test-timeout }}
+    strategy:
+      matrix:
+        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    env:
+      WORKING_DIRECTORY: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: merged-artifacts
+          path: tmp-artifacts
+      - name: Move artifacts
+        shell: bash
+        run: |
+          rsync -a --ignore-existing --remove-source-files tmp-artifacts/app-lib/* lib
+          rm -rf tmp-artifacts/app-lib/
+          rsync -a --ignore-existing --remove-source-files tmp-artifacts/intl/* lib/generated
+          rm -rf tmp-artifacts/intl/
+          for package in ./tmp-artifacts/*; do
+            packageName=$(basename "$package")
+            if [ -d "$package" ]; then
+              rsync -a --ignore-existing --remove-source-files "$package/" "packages/$packageName/"
+            fi
+          done
+          rm -rf tmp-artifacts/
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Run flutter pub get
+        run: flutter pub get
+      - name: Analyze project source
+        shell: bash
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: dart analyze --fatal-infos --fatal-warnings
+      - name: Run Flutter WiseClient tests
+        shell: bash
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: flutter test --no-pub --coverage
+      - name: Setup LCOV
+        uses: hrishikesh-kadam/setup-lcov@v1
+
+      - name: Report code coverage
+        uses: zgosalvez/github-actions-report-lcov@v4
+        with:
+          coverage-files: coverage/lcov.info
+          minimum-coverage: ${{ inputs.test-coverage }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: ${{ env.WORKING_DIRECTORY }}
+          artifact-name: ${{ matrix.deployment.path }}-coverage
