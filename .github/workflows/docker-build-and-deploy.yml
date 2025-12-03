@@ -14,6 +14,8 @@ on:
     # - K8S_DEPLOYMENTS
     # - K8S_LABELS
     # - K8S_NAMESPACE
+    # - RUNNER_DEFAULT
+    # - RUNNER_INFRA
     # For Azure vendor:
     # - AZURE_RESOURCE_GROUP
     # For DigitalOcean vendor:
@@ -73,7 +75,7 @@ on:
 jobs:
   validate-and-generate-matrix:
     name: Validate inputs & generate build matrix
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     outputs:
       variants: ${{ steps.gen-matrix.outputs.variants }}
     steps:
@@ -103,7 +105,7 @@ jobs:
     strategy:
       matrix:
         variant: ${{ fromJson(needs.validate-and-generate-matrix.outputs.variants) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
     environment: ${{ inputs.environment }}
     steps:
       # Setup

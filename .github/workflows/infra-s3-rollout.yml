@@ -8,6 +8,8 @@ name: Rollout object storage (S3)
 on:
   workflow_call:
     # Depends on the following vars
+    # - RUNNER_DEFAULT
+    # - RUNNER_INFRA
     # For DigitalOcean vendor:
     # - DIGITALOCEAN_REGION
     # For Scaleway vendor:
@@ -40,7 +42,7 @@ on:
 jobs:
   validate-and-generate-matrix:
     name: Generate job matrices
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     outputs:
       deployments: ${{ steps.changed-paths-filter.outputs.matrix }}
     steps:
@@ -81,7 +83,7 @@ jobs:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
     if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
     environment: ${{ matrix.deployment.environment }}
     steps:
       - name: Prepare environment
