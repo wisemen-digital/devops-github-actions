@@ -56,7 +56,7 @@ jobs:
           Deprecated workflow, switch to vendor agnostic workflow."
 
   build-and-deploy:
-    uses: wisemen-digital/devops-github-actions/.github/workflows/docker-build-and-deploy.yml@main
+    uses: wisemen-digital/devops-github-actions/.github/workflows/docker-build-and-deploy.yml@feature/azure-deployments
     with:
       vendor: azure
       environment: ${{ inputs.environment }}

@@ -41,7 +41,7 @@ jobs:
           Deprecated workflow, switch to vendor agnostic workflow."
 
   rollout-to-k8s:
-    uses: wisemen-digital/devops-github-actions/.github/workflows/infra-k8s-rollout.yml@main
+    uses: wisemen-digital/devops-github-actions/.github/workflows/infra-k8s-rollout.yml@feature/azure-deployments
     with:
       vendor: azure
       cluster-deployments: ${{ inputs.cluster-deployments }}

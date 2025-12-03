@@ -44,12 +44,6 @@ on:
       AZURE_SUBSCRIPTION_ID:
         description: Azure subscription ID for login with an Azure service principal
         required: false
-      AZURE_CR_USER:
-        description: Azure container registry user
-        required: true
-      AZURE_CR_TOKEN:
-        description: Azure container registry token
-        required: true
 
 jobs:
   deprecation-warning:
@@ -62,7 +56,7 @@ jobs:
           Deprecated workflow, switch to vendor agnostic workflow."
 
   promote-tag:
-    uses: wisemen-digital/devops-github-actions/.github/workflows/docker-promote-to-environment.yml@main
+    uses: wisemen-digital/devops-github-actions/.github/workflows/docker-promote-to-environment.yml@feature/azure-deployments
     with:
       vendor: azure
       environment-source: ${{ inputs.environment-source }}
@@ -74,5 +68,3 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_CR_USER: ${{ secrets.AZURE_CR_USER }}
-      AZURE_CR_TOKEN: ${{ secrets.AZURE_CR_TOKEN }}
