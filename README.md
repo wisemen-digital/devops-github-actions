@@ -2,16 +2,16 @@
 
 This repository contains a bunch of workflows, which can be reused accross our repositories.
 
-## Deployment Workflows
+## Project Workflows
+
+Docker deployments:
 
 | Workflow | Description |
 | -------- | ----------- |
-| [workflow-build-and-deploy-digitalocean.yml](Docs/workflow-build-and-deploy-digitalocean.md) | Build & deploy docker image to given environment (on DigitalOcean) |
-| [workflow-build-and-deploy-scaleway.yml](Docs/workflow-build-and-deploy-scaleway.md) | Build & deploy docker image to given environment (on Scaleway) |
-| [workflow-promote-to-environment-digitalocean.yml](Docs/workflow-promote-to-environment-digitalocean.md) | Promote image to given environment (on DigitalOcean) |
-| [workflow-promote-to-environment-scaleway.yml](Docs/workflow-promote-to-environment-scaleway.md) | Promote image to given environment (on Scaleway) |
+| [docker-build-and-deploy.yml](Docs/docker-build-and-deploy.md) | Build & deploy docker image to given environment |
+| [docker-promote-to-environment.yml](Docs/docker-promote-to-environment.md) | Promote image to given environment |
 
-## Verification Workflows
+Verification (PR check):
 
 | Workflow | Description |
 | -------- | ----------- |
@@ -19,3 +19,19 @@ This repository contains a bunch of workflows, which can be reused accross our r
 | [node-build-and-test.yml](Docs/node-build-and-test.md) | Lint, build & test a Node app |
 | [nuxt-build-and-test.yml](Docs/nuxt-build-and-test.md) | Lint, build & test a Nuxt app |
 | [web-build-and-test.yml](Docs/web-build-and-test.md) | Lint, build & test a Web app |
+
+## Infra Workflows
+
+Infra deployments:
+
+| Workflow | Description |
+| -------- | ----------- |
+| [infra-k8s-rollout.yml](Docs/infra-k8s-rollout.md) | Apply k8s configuration for the given deployments |
+| [infra-s3-rollout.yml](Docs/infra-s3-rollout.md) | Apply s3 configuration to the given buckets |
+
+Verification (PR check):
+
+| Workflow | Description |
+| -------- | ----------- |
+| [infra-k8s-preview.yml](Docs/infra-k8s-preview.md) | Generate a preview of the k8s changes |
+| [infra-lint.yml](Docs/infra-lint.md) | Lint infra changes |

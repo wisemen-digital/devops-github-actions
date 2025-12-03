@@ -9,6 +9,7 @@ on:
   workflow_call:
     # Depends on the following vars
     # - RUNNER_DEFAULT
+    inputs:
 
 jobs:
   yaml-lint:
