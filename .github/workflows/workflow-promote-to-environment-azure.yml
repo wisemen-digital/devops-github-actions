@@ -62,7 +62,7 @@ jobs:
           Deprecated workflow, switch to vendor agnostic workflow."
 
   promote-tag:
-    uses: wisemen-digital/devops-github-actions/.github/workflows/docker-promote-to-environment.yml@main
+    uses: wisemen-digital/devops-github-actions/.github/workflows/docker-promote-to-environment.yml@feature/azure-deployments
     with:
       vendor: azure
       environment-source: ${{ inputs.environment-source }}

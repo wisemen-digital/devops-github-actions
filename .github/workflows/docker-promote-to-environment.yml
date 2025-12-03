@@ -147,7 +147,7 @@ jobs:
       # Setup
       - name: Setup Docker environment
         id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/docker/setup@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/setup@feature/azure-deployments
         with:
           vendor: ${{ inputs.vendor }}
           container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
@@ -172,7 +172,7 @@ jobs:
           target_tag: ${{ needs.validate-and-generate.outputs.target }}
       # Rollout
       - name: Rollout on cluster
-        uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@feature/azure-deployments
         with:
           vendor: ${{ inputs.vendor }}
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}

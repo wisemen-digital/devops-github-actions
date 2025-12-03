@@ -56,7 +56,7 @@ runs:
   using: composite
   steps:
     # Vendor setup
-    - uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/setup@main
+    - uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/setup@feature/azure-deployments
       with:
         vendor: ${{ inputs.vendor }}
         cluster-id: ${{ inputs.cluster-id }}
