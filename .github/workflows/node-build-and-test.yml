@@ -324,18 +324,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Find the LCOV file that we uploaded as an artifact
-          FILE=$(ls **/coverage-lcov.info **/lcov.info 2>/dev/null | head -n1 || true)
+          echo "Searching for coverage-lcov.info (excluding node_modules)..."
+          FILE=$(find . -name 'coverage-lcov.info' -not -path '*node_modules*' | head -n1 || true)
 
           if [ -z "$FILE" ]; then
-            echo "No LCOV file found (coverage-lcov.info or lcov.info)"
+            echo "No LCOV file found"
             echo "coverage=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           echo "Using LCOV file: $FILE"
 
-          # Use awk to compute coverage from DA: lines
           pct=$(awk -F'[,:]' '
             /^DA:/ {
               total++;
@@ -350,14 +349,12 @@ jobs:
             }
           ' "$FILE")
 
-          echo "Coverage: ${pct}%"
+          echo "Computed coverage: ${pct}%"
           echo "coverage=${pct}" >> "$GITHUB_OUTPUT"
       - name: Add coverage to job summary
         run: |
           {
-            echo "### Code coverage"
-            echo
-            echo "- Total coverage: **${{ steps.coverage.outputs.coverage }}%**"
+            echo "### Code coverage : **${{ steps.coverage.outputs.coverage }}%**"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Comment coverage on PR
         uses: peter-evans/create-or-update-comment@v4
