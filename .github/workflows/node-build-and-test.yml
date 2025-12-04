@@ -357,14 +357,14 @@ jobs:
             echo "### Code coverage : **${{ steps.coverage.outputs.coverage }}%**"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Comment coverage on PR
-        uses: peter-evans/create-or-update-comment@v4
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: thollander/actions-comment-pull-request@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
+          message: |
             ### Code coverage
 
             Total coverage for this PR: **${{ steps.coverage.outputs.coverage }}%**
+          comment-tag: coverage-summary
       - name: Publish test report
         uses: mikepenz/action-junit-report@v4
         if: always()  # always run even if the previous step fails
