@@ -131,7 +131,7 @@ jobs:
       - name: Calculate image metadata
         run: |
           image_ref="${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}"
-          echo "tags=`echo '${{ inputs.tags || github.ref_name }}' | \
+          echo "tags=`echo '${{ inputs.environment || github.ref_name }}' | \
             sed "s#/#_#g;s#[^,]*#${image_ref}:&#g"`" >> "$GITHUB_ENV"
           echo "timestamp=`date +'%Y-%m-%dT%H:%M:%S'`" >> "$GITHUB_ENV"
       # Build
