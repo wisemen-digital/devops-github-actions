@@ -1,0 +1,38 @@
+---
+name: Wait for services to be ready
+description: |
+  Performs health checks until all the given services are ready
+inputs:
+  health-checks:
+    description: JSON defining a set of services & health checks
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for services…
+      shell: bash
+      run: |
+        wait_for_service() {
+          echo "Waiting for ${1}…"
+          until bash -c "$2" >/dev/null 2>&1; do
+            echo -n "."
+            sleep 2
+          done
+          echo "$1 ready!"
+        }
+
+        # Start all health checks in parallel
+        cat <<'EOF' > "${RUNNER_TEMP:-TMPDIR}/health-checks.json"
+        ${{ inputs.health-checks }}
+        EOF
+        services=`jq -r 'keys[]' "${RUNNER_TEMP:-TMPDIR}/health-checks.json"`
+
+        for service in $services; do
+          cmd=`jq -r --arg k "$service" '.[$k]' "${RUNNER_TEMP:-TMPDIR}/health-checks.json"`
+          wait_for_service "$service" "$cmd" &
+        done
+
+        # Wait for all background jobs to finish
+        wait
+        echo "All services are ready!"

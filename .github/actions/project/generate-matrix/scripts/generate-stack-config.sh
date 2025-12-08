@@ -32,4 +32,16 @@ jq -c '
       .
     end
   )
+
+  # Remove health checks for removed services
+  | walk(
+    if type == "object" and has("health-checks") then
+      .services as $services |
+      .["health-checks"] |= with_entries(
+        select(.key as $k | $services | has($k))
+      )
+    else
+      .
+    end
+  )
   ' "$INPUT_FILE" > "$OUTPUT_FILE"
