@@ -1,0 +1,86 @@
+---
+name: Generate Build & Test Matrix
+description: |
+  Generate build matrix based on changes, adding in configs as needed
+inputs:
+  mssql-enabled:
+    description: Enable MSSQL test service
+    required: true
+  mssql-image:
+    description: Image to use for MSSQL test DB
+    required: false
+  mysql-enabled:
+    description: Enable MYSQL test service
+    required: true
+  mysql-image:
+    description: Image to use for MySQL test DB
+    required: false
+  nats-enabled:
+    description: Enable NATS test service
+    required: true
+  nats-image:
+    description: Image to use for NATS test store
+    required: false
+  playwright-image:
+    description: Image to use for Playwright testing
+    type: string
+  postgres-enabled:
+    description: Enable PostgreSQL test service
+    required: true
+  postgres-image:
+    description: Image to use for PostgreSQL test DB
+    required: false
+  redis-enabled:
+    description: Enable Redis test service
+    required: true
+  redis-image:
+    description: Image to use for Redis test store
+    required: false
+  typesense-enabled:
+    description: Enable Typesense test service
+    required: true
+  typesense-image:
+    description: Image to use for Typesense test DB
+    required: false
+outputs:
+  matrix:
+    description: Job matrix of apps
+    value: ${{ steps.post-process.outputs.matrix }}
+
+runs:
+  using: composite
+  steps:
+    # Process inputs
+    - name: Process inputs
+      id: process-inputs
+      shell: bash
+      run: |
+        export PLACEHOLDER_MSSQL_IMAGE=${{ inputs.mssql-enabled == 'true' && inputs.mssql-image || '' }}
+        export PLACEHOLDER_MYSQL_IMAGE=${{ inputs.mysql-enabled == 'true' && inputs.mysql-image || '' }}
+        export PLACEHOLDER_NATS_IMAGE=${{ inputs.nats-enabled == 'true' && inputs.nats-image || '' }}
+        export PLACEHOLDER_POSTGRES_IMAGE=${{ inputs.postgres-enabled == 'true' && inputs.postgres-image || '' }}
+        export PLACEHOLDER_REDIS_IMAGE=${{ inputs.redis-enabled == 'true' && inputs.redis-image || '' }}
+        export PLACEHOLDER_TYPESENSE_IMAGE=${{ inputs.typesense-enabled == 'true' && inputs.typesense-image || '' }}
+        export PLACEHOLDER_VUE_CONTAINER_IMAGE=${{ inputs.playwright-image }}
+
+        "${{ github.action_path }}/scripts/generate-stack-config.sh" \
+          "${{ github.action_path }}/defaults/stack-config.json" \
+          "${RUNNER_TEMP:-TMPDIR}/stack-config.json"
+
+    # Generate build matrix
+    - name: Generate Matrix
+      id: changed-paths-filter
+      uses: wisemen-digital/devops-ga-changed-paths-filter@main
+      with:
+        changes-override: ${{ inputs.projects }}
+        filter-file: .github/monorepo-rollout-filters.yaml
+        output-key-name: stack
+
+    # Post-process build matrix (merge in object for specific stack as needed)
+    - name: Post-process matrix
+      id: post-process
+      shell: bash
+      run: |
+        echo "matrix=`"${{ github.action_path }}/scripts/merge-config-into-matrix.sh" \
+          <(echo '${{ steps.changed-paths-filter.outputs.matrix }}') \
+          "${RUNNER_TEMP:-TMPDIR}/stack-config.json"`" >> "$GITHUB_OUTPUT"
