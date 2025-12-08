@@ -1,0 +1,33 @@
+---
+name: Test project using given stack
+description: |
+  Test the project using the given stack config
+inputs:
+  app:
+    description: App that's being tested
+    required: true
+  pnpm-filter-args:
+    description: PNPM filters (to reduce scope)
+    required: false
+  stack:
+    description: The stack to test with
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Run tests for stack
+      shell: bash
+      run: |
+        export APP="${{ inputs.app }}"
+        export FILTER_ARGS="${{ inputs.pnpm-filter-args }}"
+
+        # Note: we're using '$GITHUB_ACTION_PATH' instead of github.action_path because of a bug in GA
+        # Refs: https://github.com/actions/runner/issues/2185
+
+        if [ -f "$GITHUB_ACTION_PATH/scripts/${{ inputs.stack }}.sh" ]; then
+          "$GITHUB_ACTION_PATH/scripts/${{ inputs.stack }}.sh"
+        else
+          echo "::error Unknown stack ${{ inputs.stack }}"
+          exit 1
+        fi
