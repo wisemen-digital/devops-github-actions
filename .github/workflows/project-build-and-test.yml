@@ -174,6 +174,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: app-build
+      - name: Wait for services to be ready
+        if: ${{ matrix.app.health-checks != '' && matrix.app.health-checks != '[]' }}
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@main
+        with:
+          health-checks: ${{ toJSON(matrix.app.health-checks) }}
       - name: Run tests
         uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@main
         with:

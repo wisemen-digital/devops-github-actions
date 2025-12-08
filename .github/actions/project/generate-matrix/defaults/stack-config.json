@@ -8,7 +8,6 @@
                     "MSSQL_SA_PASSWORD": "Password123!"
                 },
                 "image": "PLACEHOLDER_MSSQL_IMAGE",
-                "options": "--health-interval 10s --health-timeout 5s --health-retries 5 --health-cmd \"bash -c 'echo > /dev/tcp/localhost/1433'\"",
                 "ports": [
                     "1433:1433"
                 ]
@@ -21,7 +20,6 @@
                     "MYSQL_USER": "mysql"
                 },
                 "image": "PLACEHOLDER_MYSQL_IMAGE",
-                "options": "--health-interval 10s --health-timeout 5s --health-retries 5 --health-cmd \"mysqladmin ping\"",
                 "ports": [
                     "3306:3306"
                 ]
@@ -40,7 +38,6 @@
                     "POSTGRES_USER": "postgres"
                 },
                 "image": "PLACEHOLDER_POSTGRES_IMAGE",
-                "options": "--health-interval 10s --health-timeout 5s --health-retries 5 --health-cmd pg_isready",
                 "ports": [
                     "5432:5432"
                 ]
@@ -57,11 +54,16 @@
                     "TYPESENSE_DATA_DIR": "/home"
                 },
                 "image": "PLACEHOLDER_TYPESENSE_IMAGE",
-                "options": "--health-interval 10s --health-timeout 10s --health-retries 5 --health-cmd=\"bash -c 'exec 3<>/dev/tcp/localhost/8108 && printf \\\"GET /health HTTP/1.1\\r\\nConnection: close\\r\\n\\r\\n\\\" >&3 && head -n1 <&3 | grep 200 && exec 3>&-'\"",
                 "ports": [
                     "8108:8108"
                 ]
             }
+        },
+        "health-checks": {
+            "mssql": "nc -z localhost 1433",
+            "mysql": "mysql -h localhost -u root -prootpassword -e 'SELECT 1;' testdb",
+            "postgres": "PGPASSWORD=password psql --host=localhost --username=postgres --dbname=test_db -c '\\q'",
+            "typesense": "curl -s 'http://localhost:8108/health' | grep -q 'ok'"
         }
     },
     "nuxt": {
