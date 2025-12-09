@@ -87,7 +87,7 @@ jobs:
     steps:
       - name: Validate & generate docker workflow inputs
         id: gen-matrix
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/generate-matrix@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/generate-matrix@feature/monorepo-build-and-test
         with:
           mssql-enabled: ${{ inputs.test-mssql-enabled }}
           mssql-image: ${{ inputs.test-mssql-image }}
@@ -112,7 +112,7 @@ jobs:
     steps:
       - name: Setup Node environment
         id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@feature/monorepo-build-and-test
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
@@ -137,7 +137,7 @@ jobs:
     steps:
       - name: Setup Node environment
         id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@feature/monorepo-build-and-test
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
@@ -169,7 +169,7 @@ jobs:
     steps:
       - name: Setup Node environment
         if: ${{ matrix.app.skip != 'false' }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@feature/monorepo-build-and-test
         with:
           node-version: ${{ inputs.node-version }}
       - name: Download archive
@@ -181,12 +181,12 @@ jobs:
           path: apps
       - name: Wait for services to be ready
         if: ${{ matrix.app.skip != 'false' && matrix.app.health-checks != '' && matrix.app.health-checks != '[]' }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@feature/monorepo-build-and-test
         with:
           health-checks: ${{ toJSON(matrix.app.health-checks) }}
       - name: Run tests
         if: ${{ matrix.app.skip != 'false' }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@main
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@feature/monorepo-build-and-test
         with:
           app: ${{ matrix.app.path }}
           pnpm-filter-args: '--filter ${{ matrix.app.path }}'
