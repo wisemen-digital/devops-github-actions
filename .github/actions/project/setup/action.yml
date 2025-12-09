@@ -24,7 +24,7 @@ runs:
       shell: bash
       id: values
       run: |
-        changed_apps=`echo $matrix | jq -r '.[].path'`
+        changed_apps=`echo '${{ inputs.apps }}' | jq -r '.[] | select(.skip != true) | .path'`
 
         FILTER_ARGS=()
         while IFS= read -r item; do
@@ -33,8 +33,6 @@ runs:
         done <<< "$changed_apps"
 
         echo "pnpm_filter_args=${FILTER_ARGS[@]}" >> "$GITHUB_OUTPUT"
-      env:
-        matrix: ${{ inputs.apps || '"[]"' }}
     # Prep. Node environment
     - name: Checkout
       uses: actions/checkout@v4
