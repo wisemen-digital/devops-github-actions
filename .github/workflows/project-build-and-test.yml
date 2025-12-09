@@ -168,27 +168,31 @@ jobs:
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
       - name: Setup Node environment
+        if: ${{ matrix.app.skip != 'false' }}
         uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@main
         with:
           node-version: ${{ inputs.node-version }}
       - name: Download archive
+        if: ${{ matrix.app.skip != 'false' }}
         uses: actions/download-artifact@v4
         with:
           name: app-build
           # See note about common ancestor in 'build' job above
           path: apps
       - name: Wait for services to be ready
-        if: ${{ matrix.app.health-checks != '' && matrix.app.health-checks != '[]' }}
+        if: ${{ matrix.app.skip != 'false' && matrix.app.health-checks != '' && matrix.app.health-checks != '[]' }}
         uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@main
         with:
           health-checks: ${{ toJSON(matrix.app.health-checks) }}
       - name: Run tests
+        if: ${{ matrix.app.skip != 'false' }}
         uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@main
         with:
           app: ${{ matrix.app.path }}
           pnpm-filter-args: '--filter ${{ matrix.app.path }}'
           stack: ${{ matrix.app.stack }}
       - name: Store test reports
+        if: ${{ matrix.app.skip != 'false' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.app.path }}-test-reports
