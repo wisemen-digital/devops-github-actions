@@ -13,9 +13,7 @@ fi
 
 # Run code if debug flag is set
 function if_not_debug() {
-  if [ "${RUNNER_DEBUG:-}" != '1' ]; then
-    "$@"
-  fi
+  [[ "${RUNNER_DEBUG:-}" != '1' ]]
 }
 
 # Invoke PNPM with filters

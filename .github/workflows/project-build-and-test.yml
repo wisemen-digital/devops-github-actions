@@ -209,7 +209,11 @@ jobs:
           pattern: '*-test-reports'
           merge-multiple: true
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v4
+        uses: mikepenz/action-junit-report@v5
         with:
+          check_name: Test Report
+          group_reports: false
+          include_empty_in_summary: false
           report_paths: '**/*-test-report-junit.xml'
           require_passed_tests: true
+          simplified_summary: true
