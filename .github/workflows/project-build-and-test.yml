@@ -147,6 +147,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-build
+          # Warning: uses common ancestor, which causes it to be "stripped", so extract to `apps/`
           path: |
             apps/*/dist
             apps/*/_build
@@ -174,6 +175,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: app-build
+          # See note about common ancestor in 'build' job above
+          path: apps
       - name: Wait for services to be ready
         if: ${{ matrix.app.health-checks != '' && matrix.app.health-checks != '[]' }}
         uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@main
