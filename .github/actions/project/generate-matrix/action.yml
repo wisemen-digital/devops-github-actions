@@ -68,19 +68,34 @@ runs:
           "${RUNNER_TEMP:-TMPDIR}/stack-config.json"
 
     # Generate build matrix
-    - name: Generate Matrix
-      id: changed-paths-filter
+    - name: Generate Changes Matrix
+      id: changed-matrix
       uses: wisemen-digital/devops-ga-changed-paths-filter@main
       with:
         changes-override: ${{ inputs.projects }}
         filter-file: .github/monorepo-rollout-filters.yaml
         output-key-name: stack
+    - name: Generate All Matrix
+      id: all-matrix
+      uses: wisemen-digital/devops-ga-changed-paths-filter@main
+      with:
+        changes-override: _all_
+        filter-file: .github/monorepo-rollout-filters.yaml
+        output-key-name: stack
 
-    # Post-process build matrix (merge in object for specific stack as needed)
+    # Post-process build matrix
     - name: Post-process matrix
       id: post-process
       shell: bash
       run: |
-        echo "matrix=`"${{ github.action_path }}/scripts/merge-config-into-matrix.sh" \
-          <(echo '${{ steps.changed-paths-filter.outputs.matrix }}') \
-          "${RUNNER_TEMP:-TMPDIR}/stack-config.json"`" >> "$GITHUB_OUTPUT"
+        MATRIX_RESULT_FILE=`mktemp`
+
+        # Add missing apps with skip flag, add config info to each entry
+        "${{ github.action_path }}/scripts/post-process-matrix.sh" \
+          <(echo '${{ steps.changed-matrix.outputs.matrix }}') \
+          <(echo '${{ steps.all-matrix.outputs.matrix }}') \
+          "${RUNNER_TEMP:-TMPDIR}/stack-config.json" \
+          .github/monorepo-rollout-filters.yaml \
+          "$MATRIX_RESULT_FILE"
+
+        echo "matrix=`cat $MATRIX_RESULT_FILE`" >> "$GITHUB_OUTPUT"
