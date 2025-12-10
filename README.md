@@ -16,9 +16,7 @@ Verification (PR check):
 | Workflow | Description |
 | -------- | ----------- |
 | [laravel-build-and-test.yml](Docs/laravel-build-and-test.md) | Lint, build & test a Laravel app |
-| [node-build-and-test.yml](Docs/node-build-and-test.md) | Lint, build & test a Node app |
-| [nuxt-build-and-test.yml](Docs/nuxt-build-and-test.md) | Lint, build & test a Nuxt app |
-| [web-build-and-test.yml](Docs/web-build-and-test.md) | Lint, build & test a Web app |
+| [project-build-and-test.yml](Docs/project-build-and-test.md) | Lint, build & test a monorepo (Node-based) |
 
 ## Infra Workflows
 
