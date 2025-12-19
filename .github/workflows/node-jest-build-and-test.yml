@@ -133,7 +133,7 @@ jobs:
             dist
             _build
             !**/node_modules
-          retention-days: 3
+          retention-days: 1
   prep-test:
     name: Prepare Test Services
     runs-on: ubuntu-latest

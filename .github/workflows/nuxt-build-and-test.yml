@@ -73,7 +73,7 @@ jobs:
           path: |
             ${{ inputs.build-output-path }}
             !**/node_modules
-          retention-days: 3
+          retention-days: 1
 
   # Then test
   test:

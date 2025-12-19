@@ -95,7 +95,7 @@ jobs:
           path: |
             dist
             !**/node_modules
-          retention-days: 3
+          retention-days: 1
       - name: Prep. Playwright if needed
         id: prep-playwright
         run: |
