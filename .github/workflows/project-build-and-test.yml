@@ -117,7 +117,7 @@ jobs:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
       - name: Restore ESLint cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: apps/*/.eslintcache
           key: ${{ runner.os }}-eslint-${{ hashFiles('**/eslint.config.js', '**/eslint.config.ts', '.eslintrc.json') }}
@@ -144,7 +144,7 @@ jobs:
       - name: Run build
         run: pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} build
       - name: Store archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: app-build
           # Warning: uses common ancestor, which causes it to be "stripped", so extract to `apps/`
@@ -174,7 +174,7 @@ jobs:
           node-version: ${{ inputs.node-version }}
       - name: Download archive
         if: ${{ matrix.app.skip != 'false' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: app-build
           # See note about common ancestor in 'build' job above
@@ -193,7 +193,7 @@ jobs:
           stack: ${{ matrix.app.stack }}
       - name: Store test reports
         if: ${{ matrix.app.skip != 'false' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.app.path }}-test-reports
           path: |
@@ -208,12 +208,12 @@ jobs:
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     steps:
       - name: Download archive
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: '*-test-reports'
           merge-multiple: true
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         with:
           check_name: Test Report
           group_reports: false
