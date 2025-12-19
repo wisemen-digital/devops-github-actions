@@ -152,7 +152,7 @@ jobs:
             apps/*/dist
             apps/*/_build
             apps/*/.output
-          retention-days: 3
+          retention-days: 1
 
   # Then test
   test:
@@ -198,7 +198,7 @@ jobs:
           name: ${{ matrix.app.path }}-test-reports
           path: |
             apps/*/*-test-report-junit.xml
-          retention-days: 3
+          retention-days: 14
 
   # Finally publish test report (summary)
   publish-test-report:
