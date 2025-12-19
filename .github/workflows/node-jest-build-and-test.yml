@@ -132,6 +132,7 @@ jobs:
           path: |
             dist
             _build
+            !**/node_modules
           retention-days: 3
   prep-test:
     name: Prepare Test Services

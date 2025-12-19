@@ -94,6 +94,7 @@ jobs:
           name: app-build
           path: |
             dist
+            !**/node_modules
           retention-days: 3
       - name: Prep. Playwright if needed
         id: prep-playwright

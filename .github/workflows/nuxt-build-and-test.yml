@@ -70,7 +70,9 @@ jobs:
         with:
           name: app-build
           include-hidden-files: true
-          path: ${{ inputs.build-output-path }}
+          path: |
+            ${{ inputs.build-output-path }}
+            !**/node_modules
           retention-days: 3
 
   # Then test
