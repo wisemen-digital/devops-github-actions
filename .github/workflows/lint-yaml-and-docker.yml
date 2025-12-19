@@ -40,8 +40,8 @@ jobs:
       HADOLINT_RECURSIVE: ${{ inputs.docker-lint-recursive }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Run hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           recursive: ${{ inputs.docker-lint-recursive }}
