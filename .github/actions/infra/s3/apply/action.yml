@@ -27,7 +27,7 @@ runs:
   steps:
     # Prepare
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         sparse-checkout: |
           ${{ inputs.config-path }}

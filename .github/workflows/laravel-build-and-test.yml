@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Lint
         uses: aglipanci/laravel-pint-action@latest
         with:
@@ -43,12 +43,12 @@ jobs:
     container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       # Dependencies
       - name: Get Composer Cache Directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -68,7 +68,7 @@ jobs:
       - name: Archive result
         run: tar -czf dist.tar.gz --exclude=.git* * .??*
       - name: Store archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: app-build
           path: dist.tar.gz
@@ -100,7 +100,7 @@ jobs:
           --health-retries 5
     steps:
       - name: Download archive
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: app-build
       - name: Extract archive
@@ -117,7 +117,7 @@ jobs:
       - name: Run tests
         run: vendor/bin/pest --log-junit="test-reports-junit.xml"
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v4
+        uses: mikepenz/action-junit-report@v6
         if: always()  # always run even if the previous step fails
         with:
           report_paths: test-reports-junit.xml

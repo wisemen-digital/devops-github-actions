@@ -34,11 +34,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'pnpm'
@@ -52,11 +52,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'pnpm'
@@ -75,11 +75,11 @@ jobs:
       playwright-configured: ${{ steps.prep-playwright.outputs.playwright-configured }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'pnpm'
@@ -89,7 +89,7 @@ jobs:
         run: pnpm build
       # Archive
       - name: Store archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: app-build
           path: |
@@ -114,11 +114,11 @@ jobs:
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'pnpm'
@@ -139,7 +139,7 @@ jobs:
           fi
           pnpm vitest --run $TEST_REPORTER
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v4
+        uses: mikepenz/action-junit-report@v6
         if: always()  # always run even if the previous step fails
         with:
           report_paths: test-report-junit.xml
@@ -157,16 +157,16 @@ jobs:
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Download archive
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: app-build
           path: dist
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'pnpm'

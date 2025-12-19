@@ -80,7 +80,7 @@ runs:
 
     # Generate build matrix
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         sparse-checkout: .github
     - name: Monorepo Matrix check
