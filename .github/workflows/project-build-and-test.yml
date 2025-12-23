@@ -1,6 +1,9 @@
 ---
 name: Project Build & Test
 
+env:
+  TURBO_CACHE_DIR: .turbo/cache
+
 #
 # Build, test & lint an application
 # Note: will create an artifact called 'app-build'.
@@ -116,19 +119,14 @@ jobs:
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
-      - name: Restore ESLint cache
+      - name: Turbo Cache
         uses: actions/cache@v5
         with:
-          path: apps/*/.eslintcache
-          key: ${{ runner.os }}-eslint-${{ hashFiles('**/eslint.config.js', '**/eslint.config.ts', '.eslintrc.json') }}
-          restore-keys: |
-            ${{ runner.os }}-eslint
+          path: ${{ env.TURBO_CACHE_DIR }}
+          key: turbo-${{ github.sha }}
+          restore-keys: turbo-
       - name: Lint
-        run: |
-          pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} lint \
-            --cache \
-            --cache-location .eslintcache \
-            --cache-strategy content
+        run: pnpm turbo run lint --cache-dir="${{ env.TURBO_CACHE_DIR }}"
   build:
     name: Build Application
     needs: [generate-matrix]
@@ -141,23 +139,18 @@ jobs:
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
-      - name: Run build
-        run: pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} build
-      - name: Store archive
-        uses: actions/upload-artifact@v6
+      - name: Turbo Cache
+        uses: actions/cache@v5
         with:
-          name: app-build
-          # Warning: uses common ancestor, which causes it to be "stripped", so extract to `apps/`
-          path: |
-            apps/*/dist
-            apps/*/_build
-            apps/*/.output
-          retention-days: 1
+          path: ${{ env.TURBO_CACHE_DIR }}
+          key: turbo-${{ github.sha }}
+      - name: Run build
+        run: pnpm turbo run build --cache-dir="${{ env.TURBO_CACHE_DIR }}"
 
   # Then test
   test:
     name: Test Application ${{ matrix.app.path }}
-    needs: [generate-matrix, lint, build]
+    needs: [generate-matrix, build]
     strategy:
       matrix:
         app: ${{ fromJson(needs.generate-matrix.outputs.apps) }}
@@ -172,25 +165,21 @@ jobs:
         uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
         with:
           node-version: ${{ inputs.node-version }}
-      - name: Download archive
-        if: ${{ matrix.app.skip != 'false' }}
-        uses: actions/download-artifact@v7
+      - name: Turbo Cache
+        uses: actions/cache@v5
         with:
-          name: app-build
-          # See note about common ancestor in 'build' job above
-          path: apps
+          path: ${{ env.TURBO_CACHE_DIR }}
+          key: turbo-${{ github.sha }}
       - name: Wait for services to be ready
         if: ${{ matrix.app.skip != 'false' && matrix.app.health-checks != '' && matrix.app.health-checks != '[]' }}
         uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@v1
         with:
           health-checks: ${{ toJSON(matrix.app.health-checks) }}
       - name: Run tests
-        if: ${{ matrix.app.skip != 'false' }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@v1
-        with:
-          app: ${{ matrix.app.path }}
-          pnpm-filter-args: '--filter ${{ matrix.app.path }}'
-          stack: ${{ matrix.app.stack }}
+        run: |
+          pnpm turbo run test \
+            --filter=${{ matrix.app.path }} \
+            --cache-dir="${{ env.TURBO_CACHE_DIR }}"
       - name: Store test reports
         if: ${{ matrix.app.skip != 'false' }}
         uses: actions/upload-artifact@v6
