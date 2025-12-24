@@ -46,3 +46,6 @@ runs:
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile --prefer-offline
+    - name: Deploy workspace packages
+      shell: bash
+      run: pnpm deploy --prod --no-optional
