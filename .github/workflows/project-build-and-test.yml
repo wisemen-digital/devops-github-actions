@@ -169,7 +169,7 @@ jobs:
     steps:
       - name: Setup Node environment
         if: ${{ matrix.app.skip != 'false' }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@feature/deploy-workspace-packages
         with:
           node-version: ${{ inputs.node-version }}
       - name: Download archive
