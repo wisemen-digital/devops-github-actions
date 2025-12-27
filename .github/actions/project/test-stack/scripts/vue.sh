@@ -44,6 +44,6 @@ start_log_group "Run Vue E2E tests"
   export PLAYWRIGHT_JUNIT_OUTPUT_NAME="$JUNIT_REPORT_FILE"
   export PLAYWRIGHT_JUNIT_SUITE_NAME="${APP} E2E Tests"
 
-  pnpm exec playwright test "${TEST_REPORTER_OPTIONS[@]}"
+  pnpm playwright test "${TEST_REPORTER_OPTIONS[@]}"
 )
 stop_log_group
