@@ -155,6 +155,9 @@ jobs:
           retention-days: 1
 
   # Then test
+  #
+  # Note: if skip is set, we "skip" all steps but still run the job. This is so we can enforce that
+  # PRs always run all stack's jobs
   test:
     name: Test Application ${{ matrix.app.path }}
     needs: [generate-matrix, lint, build]
@@ -192,7 +195,7 @@ jobs:
           pnpm-filter-args: '--filter ${{ matrix.app.path }}'
           stack: ${{ matrix.app.stack }}
       - name: Store test reports
-        if: ${{ matrix.app.skip != 'false' }}
+        if: ${{ always() && matrix.app.skip != 'false' }}
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.app.path }}-test-reports
