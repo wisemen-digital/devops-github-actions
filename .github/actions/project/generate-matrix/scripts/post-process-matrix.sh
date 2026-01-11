@@ -45,8 +45,8 @@ jq -cn '
 
   # Process all (add skip property, only keep missing)
   (
-    # Add skip properties
-    $all[0] | map(. + {skip: true})
+    # Add skip properties and enrich with config data
+    $all[0] | map(. + {skip: true} + ($config[0][.stack] // {}))
     # Only keep items not present in "changes"
     | map(
       .path as $path |
