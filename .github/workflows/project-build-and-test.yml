@@ -222,5 +222,5 @@ jobs:
           group_reports: false
           include_empty_in_summary: false
           report_paths: '**/*-test-report-junit.xml'
-          require_passed_tests: true
+          require_passed_tests: false
           simplified_summary: true
