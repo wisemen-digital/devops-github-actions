@@ -1,0 +1,81 @@
+{
+    "nest": {
+        "services": {
+            "mssql": {
+                "env": {
+                    "ACCEPT_EULA": "Y",
+                    "MSSQL_DB": "test_db",
+                    "MSSQL_SA_PASSWORD": "Password123!"
+                },
+                "image": "PLACEHOLDER_MSSQL_IMAGE",
+                "ports": [
+                    "1433:1433"
+                ]
+            },
+            "mysql": {
+                "env": {
+                    "MYSQL_DATABASE": "testdb",
+                    "MYSQL_PASSWORD": "password",
+                    "MYSQL_ROOT_PASSWORD": "rootpassword",
+                    "MYSQL_USER": "mysql"
+                },
+                "image": "PLACEHOLDER_MYSQL_IMAGE",
+                "ports": [
+                    "3306:3306"
+                ]
+            },
+            "nats": {
+                "image": "PLACEHOLDER_NATS_IMAGE",
+                "ports": [
+                    "4222:4222"
+                ]
+            },
+            "postgres": {
+                "env": {
+                    "POSTGRES_DB": "test_db",
+                    "POSTGRES_HOST_AUTH_METHOD": "trust",
+                    "POSTGRES_PASSWORD": "password",
+                    "POSTGRES_USER": "postgres"
+                },
+                "image": "PLACEHOLDER_POSTGRES_IMAGE",
+                "ports": [
+                    "5432:5432"
+                ]
+            },
+            "redis": {
+                "image": "PLACEHOLDER_REDIS_IMAGE",
+                "ports": [
+                    "6379:6379"
+                ]
+            },
+            "typesense": {
+                "env": {
+                    "TYPESENSE_API_KEY": "api_key",
+                    "TYPESENSE_DATA_DIR": "/home"
+                },
+                "image": "PLACEHOLDER_TYPESENSE_IMAGE",
+                "ports": [
+                    "8108:8108"
+                ]
+            }
+        },
+        "health-checks": {
+            "mssql": "nc -z localhost 1433",
+            "mysql": "mysql -h localhost -u root -prootpassword -e 'SELECT 1;' testdb",
+            "postgres": "PGPASSWORD=password psql --host=localhost --username=postgres --dbname=test_db -c '\\q'",
+            "typesense": "curl -s 'http://localhost:8108/health' | grep -q 'ok'"
+        }
+    },
+    "nuxt": {
+        "services": {
+        }
+    },
+    "vue": {
+        "container": {
+            "image": "PLACEHOLDER_VUE_CONTAINER_IMAGE",
+            "options": "--user 1001"
+        },
+        "services": {
+        }
+    }
+}

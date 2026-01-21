@@ -1,0 +1,226 @@
+---
+name: Project Build & Test
+
+#
+# Build, test & lint an application
+# Note: will create an artifact called 'app-build'.
+#
+
+on:
+  workflow_call:
+    # Depends on the following vars
+    # - RUNNER_DEFAULT
+    # - RUNNER_TEST
+    inputs:
+      node-version:
+        description: Node Version (such as 20.5)
+        default: 'lts/*'
+        type: string
+      test-timeout:
+        description: Time (in minutes) after wich the test job will timeout
+        default: 5
+        type: number
+      # Test services configuration
+      test-mssql-enabled:
+        description: Enable MSSQL test service (defaults to false)
+        default: false
+        type: boolean
+      test-mssql-image:
+        description: Image to use for MSSQL test DB (defaults to normal image)
+        default: 'mcr.microsoft.com/mssql/server:2022-latest'
+        type: string
+      test-mysql-enabled:
+        description: Enable MYSQL test service (defaults to false)
+        default: false
+        type: boolean
+      test-mysql-image:
+        description: Image to use for MySQL test DB (defaults to normal image)
+        default: 'mysql:8'
+        type: string
+      test-nats-enabled:
+        description: Enable NATS test service (defaults to false)
+        default: false
+        type: boolean
+      test-nats-image:
+        description: Image to use for NATS test store (defaults to our test image)
+        default: 'ghcr.io/wisemen-digital/test-nats:latest'
+        type: string
+      test-playwright-image:
+        description: Image to use for Playwright testing (defaults to their prebuilt version)
+        default: 'mcr.microsoft.com/playwright:v1.57.0'
+        type: string
+      test-postgres-enabled:
+        description: Enable PostgreSQL test service (defaults to true)
+        default: true
+        type: boolean
+      test-postgres-image:
+        description: Image to use for PostgreSQL test DB (defaults to normal image)
+        default: 'postgis/postgis'
+        type: string
+      test-redis-enabled:
+        description: Enable Redis test service (defaults to false)
+        default: false
+        type: boolean
+      test-redis-image:
+        description: Image to use for Redis test store (defaults to normal image)
+        default: 'redis:alpine'
+        type: string
+      test-typesense-enabled:
+        description: Enable Typesense test service (defaults to false)
+        default: false
+        type: boolean
+      test-typesense-image:
+        description: Image to use for Typesense test DB (defaults to normal image)
+        default: 'typesense/typesense:26.0'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate-matrix:
+    name: Generate job matrices
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    outputs:
+      apps: ${{ steps.gen-matrix.outputs.matrix }}
+    steps:
+      - name: Validate & generate docker workflow inputs
+        id: gen-matrix
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/generate-matrix@v1
+        with:
+          mssql-enabled: ${{ inputs.test-mssql-enabled }}
+          mssql-image: ${{ inputs.test-mssql-image }}
+          mysql-enabled: ${{ inputs.test-mysql-enabled }}
+          mysql-image: ${{ inputs.test-mysql-image }}
+          nats-enabled: ${{ inputs.test-nats-enabled }}
+          nats-image: ${{ inputs.test-nats-image }}
+          playwright-image: ${{ inputs.test-playwright-image }}
+          postgres-enabled: ${{ inputs.test-postgres-enabled }}
+          postgres-image: ${{ inputs.test-postgres-image }}
+          redis-enabled: ${{ inputs.test-redis-enabled }}
+          redis-image: ${{ inputs.test-redis-image }}
+          typesense-enabled: ${{ inputs.test-typesense-enabled }}
+          typesense-image: ${{ inputs.test-typesense-image }}
+
+  # First lint & build
+  lint:
+    name: Lint Application
+    needs: [generate-matrix]
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - name: Setup Node environment
+        id: setup
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        with:
+          apps: ${{ needs.generate-matrix.outputs.apps }}
+          node-version: ${{ inputs.node-version }}
+      - name: Restore ESLint cache
+        uses: actions/cache@v5
+        with:
+          path: apps/*/.eslintcache
+          key: ${{ runner.os }}-eslint-${{ hashFiles('**/eslint.config.js', '**/eslint.config.ts', '.eslintrc.json') }}
+          restore-keys: |
+            ${{ runner.os }}-eslint
+      - name: Lint
+        run: |
+          pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} lint \
+            --cache \
+            --cache-location .eslintcache \
+            --cache-strategy content
+  build:
+    name: Build Application
+    needs: [generate-matrix]
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - name: Setup Node environment
+        id: setup
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        with:
+          apps: ${{ needs.generate-matrix.outputs.apps }}
+          node-version: ${{ inputs.node-version }}
+      - name: Run build
+        run: pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} build
+      - name: Store archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: app-build
+          # Warning: uses common ancestor, which causes it to be "stripped", so extract to `apps/`
+          path: |
+            apps/*/dist
+            apps/*/_build
+            apps/*/.output
+          retention-days: 1
+
+  # Then test
+  #
+  # Note: if skip is set, we "skip" all steps but still run the job. This is so we can enforce that
+  # PRs always run all stack's jobs
+  test:
+    name: Test Application ${{ matrix.app.path }}
+    needs: [generate-matrix, lint, build]
+    strategy:
+      matrix:
+        app: ${{ fromJson(needs.generate-matrix.outputs.apps) }}
+    if: ${{ needs.generate-matrix.outputs.apps != '[]' }}
+    runs-on: ${{ vars.RUNNER_TEST || 'ubuntu-latest' }}
+    container: ${{ matrix.app.container }}
+    services: ${{ matrix.app.services }}
+    timeout-minutes: ${{ inputs.test-timeout }}
+    steps:
+      - name: Setup Node environment
+        if: ${{ matrix.app.skip != true }}
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Download archive
+        if: ${{ matrix.app.skip != true }}
+        uses: actions/download-artifact@v7
+        with:
+          name: app-build
+          # See note about common ancestor in 'build' job above
+          path: apps
+      - name: Wait for services to be ready
+        if: ${{ matrix.app.skip != true && matrix.app.health-checks != '' && matrix.app.health-checks != '[]' }}
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@v1
+        with:
+          health-checks: ${{ toJSON(matrix.app.health-checks) }}
+      - name: Run tests
+        if: ${{ matrix.app.skip != true }}
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@v1
+        with:
+          app: ${{ matrix.app.path }}
+          pnpm-filter-args: '--filter ${{ matrix.app.path }}'
+          stack: ${{ matrix.app.stack }}
+      - name: Store test reports
+        if: ${{ always() && matrix.app.skip != true }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.app.path }}-test-reports
+          path: |
+            apps/*/*-test-report-junit.xml
+          retention-days: 14
+
+  # Finally publish test report (summary)
+  publish-test-report:
+    name: Publish Test Application
+    needs: [test]
+    if: always() && needs.test.result != 'skipped'
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    steps:
+      - name: Download archive
+        uses: actions/download-artifact@v7
+        with:
+          pattern: '*-test-reports'
+          merge-multiple: true
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v6
+        with:
+          check_name: Test Report
+          group_reports: false
+          include_empty_in_summary: false
+          report_paths: '**/*-test-report-junit.xml'
+          require_passed_tests: false
+          simplified_summary: true
