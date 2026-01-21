@@ -34,7 +34,7 @@ jobs:
           Deprecated workflow, switch to vendor agnostic workflow."
 
   rollout-to-s3:
-    uses: wisemen-digital/devops-github-actions/.github/workflows/infra-s3-rollout.yml@main
+    uses: wisemen-digital/devops-github-actions/.github/workflows/infra-s3-rollout.yml@bugfix/s3-rollout-job-name
     with:
       vendor: scaleway
       bucket-deployments: ${{ inputs.bucket-deployments }}

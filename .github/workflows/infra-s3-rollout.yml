@@ -81,8 +81,8 @@ jobs:
     needs: [validate-and-generate-matrix]
     strategy:
       matrix:
-        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
-    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+        deployment: ${{ fromJson(needs.validate-and-generate-matrix.outputs.deployments) }}
+    if: ${{ needs.validate-and-generate-matrix.outputs.deployments != '[]' }}
     runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
     environment: ${{ matrix.deployment.environment }}
     steps:
