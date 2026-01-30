@@ -125,10 +125,15 @@ jobs:
             ${{ runner.os }}-eslint
       - name: Lint
         run: |
-          pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} lint \
-            --cache \
-            --cache-location .eslintcache \
-            --cache-strategy content
+          CACHE_ARGS="--cache --cache-location .eslintcache --cache-strategy content"
+          if test -f 'turbo.json'; then
+            pnpm lint \
+              ${{ steps.setup.outputs.pnpm-filter-args }}
+              $CACHE_ARGS
+          else
+            pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} lint \
+              $CACHE_ARGS
+          fi
   build:
     name: Build Application
     needs: [generate-matrix]
@@ -142,16 +147,22 @@ jobs:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
       - name: Run build
-        run: pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} build
+        run: |
+          if test -f 'turbo.json'; then
+            pnpm build ${{ steps.setup.outputs.pnpm-filter-args }}
+          else
+            pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} build
+          fi
       - name: Store archive
         uses: actions/upload-artifact@v6
         with:
           name: app-build
           # Warning: uses common ancestor, which causes it to be "stripped", so extract to `apps/`
           path: |
-            apps/*/dist
-            apps/*/_build
             apps/*/.output
+            apps/*/_build
+            apps/*/dist
+            packages/*/dist
           retention-days: 1
 
   # Then test
