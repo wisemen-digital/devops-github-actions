@@ -128,8 +128,8 @@ jobs:
           CACHE_ARGS="--cache --cache-location .eslintcache --cache-strategy content"
           if test -f 'turbo.json'; then
             pnpm lint \
-              ${{ steps.setup.outputs.pnpm-filter-args }}
-              $CACHE_ARGS
+              ${{ steps.setup.outputs.pnpm-filter-args }} \
+              -- $CACHE_ARGS
           else
             pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} lint \
               $CACHE_ARGS
