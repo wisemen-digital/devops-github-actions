@@ -162,7 +162,7 @@ jobs:
             apps/*/.output
             apps/*/_build
             apps/*/dist
-            packages/*/dist
+            packages/**/dist
           retention-days: 1
 
   # Then test
