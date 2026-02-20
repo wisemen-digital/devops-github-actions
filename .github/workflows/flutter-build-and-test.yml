@@ -85,7 +85,10 @@ jobs:
         run: flutter pub get
       - name: Generate ${{ matrix.deployment.path }} code
         working-directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
-        run: dart pub run build_runner build -d
+        run: |
+          if grep -q "build_runner" pubspec.yaml; then
+            dart pub run build_runner build -d
+          fi
       - name: Upload generated code
         uses: actions/upload-artifact@v4
         with:
