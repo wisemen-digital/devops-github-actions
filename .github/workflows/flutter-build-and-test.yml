@@ -21,6 +21,10 @@ on:
         description: Minimum test coverage required (defaults to 0)
         default: 0
         type: number
+      skip-formatting:
+        description: Skip formatting check (defaults to false)
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -39,6 +43,7 @@ jobs:
       - name: Run flutter pub get
         run: flutter pub get
       - name: Verify formatting
+        if: ${{ !inputs.skip-formatting }}
         run: dart format . --set-exit-if-changed
       - name: Generate intl
         run: |
