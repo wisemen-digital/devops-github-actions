@@ -148,7 +148,7 @@ jobs:
         shell: bash
         working-directory: ${{ env.WORKING_DIRECTORY }}
         run: dart analyze --fatal-infos --fatal-warnings
-      - name: Run Flutter WiseClient tests
+      - name: Run Flutter ${{ matrix.deployment.path }} tests
         shell: bash
         working-directory: ${{ env.WORKING_DIRECTORY }}
         run: flutter test --no-pub --coverage
@@ -159,7 +159,7 @@ jobs:
         uses: zgosalvez/github-actions-report-lcov@v4
         with:
           coverage-files: coverage/lcov.info
-          minimum-coverage: ${{ inputs.test-coverage }}
+          minimum-coverage: ${{ env.WORKING_DIRECTORY }}/${{ inputs.test-coverage }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: ${{ env.WORKING_DIRECTORY }}
           artifact-name: ${{ matrix.deployment.path }}-coverage
