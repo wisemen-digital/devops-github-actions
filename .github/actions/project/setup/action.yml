@@ -10,6 +10,10 @@ inputs:
     description: Node Version (such as 20.5)
     required: false
     default: 'lts/*'
+  pnpm-cache-mode:
+    description: PNPM cache mode (`rw` for read/write, `off` to disable)
+    required: false
+    default: rw
 outputs:
   pnpm-filter-args:
     description: Arguments for a `pnpm` command to only trigger for the given apps
