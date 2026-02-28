@@ -119,6 +119,8 @@ jobs:
           image: ${{ inputs.image }}
           k8s-labels: ${{ vars.K8S_LABELS }}
           prepare-for-building: true
+          platforms: ${{ vars.CONTAINER_PLATFORMS || 'linux/amd64' }}
+          login-ghcr: false
           variant-path: ${{ matrix.variant.path }}
           # Vendor: azure
           azure-user: ${{ secrets.AZURE_CR_USER }}
@@ -143,8 +145,8 @@ jobs:
           platforms: ${{ vars.CONTAINER_PLATFORMS || 'linux/amd64' }}
           push: true
           tags: ${{ env.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=docker-build-${{ matrix.variant.path || 'default' }}
+          cache-to: type=gha,mode=max,ignore-error=true,scope=docker-build-${{ matrix.variant.path || 'default' }}
           target: ${{ matrix.variant.path }}
           build-args: |
             BUILD_COMMIT=${{ github.sha }}

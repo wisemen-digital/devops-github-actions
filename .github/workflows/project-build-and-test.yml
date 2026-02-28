@@ -116,6 +116,7 @@ jobs:
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
+          pnpm-cache-mode: off
       - name: Restore ESLint cache
         uses: actions/cache@v5
         with:
@@ -146,6 +147,7 @@ jobs:
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
+          pnpm-cache-mode: off
       - name: Run build
         run: |
           if test -f 'turbo.json'; then
@@ -186,6 +188,7 @@ jobs:
         uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
         with:
           node-version: ${{ inputs.node-version }}
+          pnpm-cache-mode: rw
       - name: Download archive
         if: ${{ matrix.app.skip != true }}
         uses: actions/download-artifact@v7
