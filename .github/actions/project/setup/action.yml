@@ -10,6 +10,10 @@ inputs:
     description: Node Version (such as 20.5)
     required: false
     default: 'lts/*'
+  pnpm-cache-mode:
+    description: PNPM cache mode (`rw` for read/write, `off` to disable)
+    required: false
+    default: rw
 outputs:
   pnpm-filter-args:
     description: Arguments for a `pnpm` command to only trigger for the given apps
@@ -38,11 +42,17 @@ runs:
       uses: actions/checkout@v6
     - name: Install pnpm
       uses: pnpm/action-setup@v4
-    - name: Install Node.js
+    - name: Install Node.js (with cache)
+      if: ${{ inputs.pnpm-cache-mode == 'rw' }}
       uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
         cache: 'pnpm'
+    - name: Install Node.js (without cache)
+      if: ${{ inputs.pnpm-cache-mode == 'off' }}
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile --prefer-offline
