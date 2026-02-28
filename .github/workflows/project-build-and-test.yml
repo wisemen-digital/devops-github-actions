@@ -156,7 +156,7 @@ jobs:
             pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} build
           fi
       - name: Store archive
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: app-build
           # Note: common ancestor is the repo root (because of apps + packages), so extract at repo root.
@@ -191,7 +191,7 @@ jobs:
           pnpm-cache-mode: rw
       - name: Download archive
         if: ${{ matrix.app.skip != true }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: app-build
           # See note about common ancestor in 'build' job above
@@ -210,7 +210,7 @@ jobs:
           stack: ${{ matrix.app.stack }}
       - name: Store test reports
         if: ${{ always() && matrix.app.skip != true }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.app.path }}-test-reports
           path: |
@@ -225,7 +225,7 @@ jobs:
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     steps:
       - name: Download archive
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: '*-test-reports'
           merge-multiple: true
