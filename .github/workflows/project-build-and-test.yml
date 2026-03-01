@@ -158,6 +158,7 @@ jobs:
           node-version: ${{ inputs.node-version }}
           pnpm-cache-mode: rw
       - name: Run build
+        if: ${{ matrix.app.skip != true }}
         run: |
           if test -f 'turbo.json'; then
             pnpm build --filter ${{ matrix.app.path }}
