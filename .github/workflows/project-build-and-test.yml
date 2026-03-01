@@ -103,7 +103,6 @@ jobs:
           typesense-enabled: ${{ inputs.test-typesense-enabled }}
           typesense-image: ${{ inputs.test-typesense-image }}
 
-  # First lint & build
   lint:
     name: Lint Application
     needs: [generate-matrix]
@@ -135,37 +134,6 @@ jobs:
             pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} lint \
               $CACHE_ARGS
           fi
-  build:
-    name: Build Application
-    needs: [generate-matrix]
-    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
-    timeout-minutes: 5
-    steps:
-      - name: Setup Node environment
-        id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
-        with:
-          apps: ${{ needs.generate-matrix.outputs.apps }}
-          node-version: ${{ inputs.node-version }}
-          pnpm-cache-mode: off
-      - name: Run build
-        run: |
-          if test -f 'turbo.json'; then
-            pnpm build ${{ steps.setup.outputs.pnpm-filter-args }}
-          else
-            pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} build
-          fi
-      - name: Store archive
-        uses: actions/upload-artifact@v6
-        with:
-          name: app-build
-          # Note: common ancestor is the repo root (because of apps + packages), so extract at repo root.
-          path: |
-            apps/*/.output
-            apps/*/_build
-            apps/*/dist
-            packages/**/dist
-          retention-days: 1
 
   # Then test
   #
@@ -173,7 +141,7 @@ jobs:
   # PRs always run all stack's jobs
   test:
     name: Test Application ${{ matrix.app.path }}
-    needs: [generate-matrix, lint, build]
+    needs: [generate-matrix]
     strategy:
       matrix:
         app: ${{ fromJson(needs.generate-matrix.outputs.apps) }}
@@ -189,13 +157,13 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
           pnpm-cache-mode: rw
-      - name: Download archive
-        if: ${{ matrix.app.skip != true }}
-        uses: actions/download-artifact@v7
-        with:
-          name: app-build
-          # See note about common ancestor in 'build' job above
-          path: .
+      - name: Run build
+        run: |
+          if test -f 'turbo.json'; then
+            pnpm build --filter ${{ matrix.app.path }}
+          else
+            pnpm --recursive  --filter ${{ matrix.app.path }} build
+          fi
       - name: Wait for services to be ready
         if: ${{ matrix.app.skip != true && matrix.app.health-checks != '' && matrix.app.health-checks != '[]' }}
         uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@v1
@@ -220,7 +188,7 @@ jobs:
   # Finally publish test report (summary)
   publish-test-report:
     name: Publish Test Application
-    needs: [test]
+    needs: [lint, test]
     if: always() && needs.test.result != 'skipped'
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     steps:
