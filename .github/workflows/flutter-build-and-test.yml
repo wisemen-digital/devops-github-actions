@@ -25,6 +25,10 @@ on:
         description: Skip formatting check (defaults to false)
         default: false
         type: boolean
+      skip-reporting:
+        description: Skip reporting coverage to Codecov (defaults to false)
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -157,6 +161,7 @@ jobs:
 
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v7.0.2
+        if: ${{ !inputs.skip-reporting }}
         with:
           coverage-files: ${{ env.WORKING_DIRECTORY }}/coverage/lcov.info
           minimum-coverage: ${{ env.WORKING_DIRECTORY }}/${{ inputs.test-coverage }}
