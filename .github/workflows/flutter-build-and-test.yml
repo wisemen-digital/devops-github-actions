@@ -158,7 +158,7 @@ jobs:
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v7.0.2
         with:
-          coverage-files: coverage/lcov.info
+          coverage-files: ${{ env.WORKING_DIRECTORY }}/coverage/lcov.info
           minimum-coverage: ${{ env.WORKING_DIRECTORY }}/${{ inputs.test-coverage }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: ${{ env.WORKING_DIRECTORY }}
