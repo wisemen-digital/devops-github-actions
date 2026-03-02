@@ -38,11 +38,12 @@ runs:
       uses: actions/checkout@v6
     - name: Install pnpm
       uses: pnpm/action-setup@v4
+      with:
+        cache: true
     - name: Install Node.js
       uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'pnpm'
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile --prefer-offline
