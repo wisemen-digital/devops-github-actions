@@ -145,8 +145,8 @@ jobs:
           platforms: ${{ vars.CONTAINER_PLATFORMS || 'linux/amd64' }}
           push: true
           tags: ${{ env.tags }}
-          cache-from: type=gha,scope=docker-build-${{ matrix.variant.path || 'default' }}
-          cache-to: type=gha,mode=max,ignore-error=true,scope=docker-build-${{ matrix.variant.path || 'default' }}
+          cache-from: type=registry,ref=${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}:buildcache
+          cache-to: type=registry,ref=${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}:buildcache,mode=max
           target: ${{ matrix.variant.path }}
           build-args: |
             BUILD_COMMIT=${{ github.sha }}
