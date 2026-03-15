@@ -4,49 +4,88 @@ name: Deploy Laravel (Legacy)
 #
 # Deploy the result of a given "build" run to a server.
 #
-# Note: requires a "run ID", which you can get from the URL of a "build" run.
-# Example: https://github.com/…/actions/runs/6250541299 -> 6250541299
-#
 
 on:
   workflow_call:
+    # Depends on the following vars
+    # - DEPLOY_URL
     inputs:
-      workflow-run-id:
-        description: Github run ID
-        required: true
-        type: string
       environment:
         description: Target environment
+        required: true
+        type: string
+      extra-rsync-args:
+        description: Extra rsync args inserted before the workflow defaults. Use this for custom include/exclude rules when needed.
+        required: false
+        type: string
+      php-version:
+        description: PHP Version (such as 8.2)
+        default: '8.3'
         required: true
         type: string
     secrets:
       SSH_KEY:
         description: Private SSH key
         required: true
-      KNOWN_HOSTS:
-        description: Target host checksum
-        required: true
 
 jobs:
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    container: lorisleiva/laravel-docker:${{ inputs.php-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Prepare .env (needed for some old projects)
+        run: cp -f .env.example .env
+      # Dependencies
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+      # Optimize
+      - name: Optimize composer autoloader
+        run: composer dump-autoload --optimize --classmap-authoritative
+      - name: Cache laravel events
+        run: php artisan event:cache
+      - name: Cache laravel routes
+        run: php artisan route:cache
+      - name: Cache laravel views
+        run: php artisan view:cache
+      # Archive
+      - name: Archive result
+        run: tar -czf dist.tar.gz --exclude=.git* * .??*
+      - name: Store archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: app-build
+          path: dist.tar.gz
+          retention-days: 1
   deploy:
     name: Deploy build to ${{ inputs.environment }}
+    needs: build
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_KEY }}
-          known_hosts: ${{ secrets.KNOWN_HOSTS }}
-      # Get archive
-      - name: Download & extract archive
+      - name: Setup SSH
         run: |
-          gh run download ${{ inputs.workflow-run-id }} -n app-build
-          tar xzf dist.tar.gz
-          rm dist.tar.gz
-        env:
-          GH_REPO: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ vars.DEPLOY_URL }} >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/*
+      # Get archive
+      - name: Download archive
+        uses: actions/download-artifact@v7
+        with:
+          name: app-build
+      - name: Extract archive
+        run: tar xzf dist.tar.gz && rm dist.tar.gz
       # Pre-deploy: turn server off
       - name: Enable maintenance mode
         run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan down"
@@ -54,11 +93,12 @@ jobs:
       - name: Upload files
         run: >-
           rsync -crltDz . ${{ vars.DEPLOY_URL }}:www/htdocs --delete-delay
+          ${{ inputs.extra-rsync-args }}
+          --include=public/index.php
           --exclude=.env
           --exclude=.git
           --exclude=tests
           --exclude='public/*'
-          --include=public/index.php
           --exclude=storage/logs
           --exclude=storage/framework/sessions
           --exclude=storage/framework/cache
