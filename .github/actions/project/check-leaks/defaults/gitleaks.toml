@@ -1,0 +1,21 @@
+title = "Custom Gitleaks configuration"
+minVersion = "v8.30.0"
+
+[extend]
+# See default config at
+# https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+useDefault = true
+
+[[allowlists]]
+description = "Avoid false positive on i18n"
+regexTarget = "match"
+regexes = [
+  '''props.i18nKey''',
+]
+
+[[allowlists]]
+description = "Don't check test assets"
+paths = [
+  '''apps/(.*?)/tests/(.*?)\.json$''',
+  '''apps/(.*?)/.env.test''',
+]

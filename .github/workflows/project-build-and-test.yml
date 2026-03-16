@@ -79,6 +79,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # First check for leaks & generate workflow matrix
+  check-leaks:
+    name: Check for leaks
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Scan for leaks
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/check-leaks@v1
+        with:
+          github-access-token: ${{ github.token }}
   generate-matrix:
     name: Generate job matrices
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
@@ -103,6 +117,7 @@ jobs:
           typesense-enabled: ${{ inputs.test-typesense-enabled }}
           typesense-image: ${{ inputs.test-typesense-image }}
 
+  # Then lint & test
   lint:
     name: Lint Application
     needs: [generate-matrix]
@@ -133,9 +148,6 @@ jobs:
             pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} lint \
               $CACHE_ARGS
           fi
-
-  # Then test
-  #
   # Note: if skip is set, we "skip" all steps but still run the job. This is so we can enforce that
   # PRs always run all stack's jobs
   test:
@@ -187,7 +199,7 @@ jobs:
   # Finally publish test report (summary)
   publish-test-report:
     name: Publish Test Application
-    needs: [lint, test]
+    needs: [check-leaks, lint, test]
     if: always() && needs.test.result != 'skipped'
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     steps:
