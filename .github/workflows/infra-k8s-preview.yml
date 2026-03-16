@@ -15,8 +15,10 @@ on:
         required: false
 
 jobs:
+  # Won't do anything outside PR, otherwise comment fails
   preview-k8s:
     name: Diff with k8s
+    if: github.event_name == 'pull_request'
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     steps:
       - name: Generate changed paths
