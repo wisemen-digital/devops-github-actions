@@ -4,7 +4,7 @@
 
 This workflow will grab the existing docker image & tag, and triggers either a cluster rollout or a serverless redeploy. It essentially just re-tags an image and rolls it out. If kubernetes labels are provided, the list of deployments will **not** be used.
 
-If you don't provide a source environment to deploy "from", it will calculate it based on the "target" environment. This will be done based on the usual order of `development -> test -> staging -> production`.
+It will calculate the "source" enviroment based on the "target" environment. This will be done based on the usual order of `development -> test -> staging -> production`.
 
 ### K8S Cluster Rollout
 
@@ -21,7 +21,6 @@ A redeploy on an existing Serverless Container. It does not create or update the
 | Input | Description | Required |
 | ----- | ----------- | -------- |
 | `vendor` | The vendor to communicate with (azure, digitalocean, scaleway) | Yes |
-| `environment-source` | Source environment to deploy from | Yes |
 | `environment-target` | Target environment to deploy to | Yes |
 | `environment-map` | Custom environment mapping (JSON object) | Yes |
 | `image` | Image name. Defaults to repository name | No |

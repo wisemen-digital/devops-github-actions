@@ -28,10 +28,6 @@ on:
         description: The vendor to communicate with (azure, digitalocean, scaleway)
         type: string
         required: true
-      environment-source:
-        description: Source environment to deploy FROM (defaults to previous environment)
-        type: string
-        required: false
       environment-target:
         description: Target environment to deploy TO
         type: string
@@ -113,18 +109,14 @@ jobs:
           target=`echo ${{ inputs.environment-target }} | tr '[:upper:]' '[:lower:]'`
           echo "target=$target" >> "$GITHUB_OUTPUT"
 
-          if [ ! -z "${{ inputs.environment-source }}" ]; then
-            echo "source=${{ inputs.environment-source }}" >> "$GITHUB_OUTPUT"
-          else
-            env_map='${{ inputs.environment-map || env.default-tag-map }}'
-            source=`echo $env_map | jq -r ".$target"`
+          env_map='${{ inputs.environment-map || env.default-tag-map }}'
+          source=`echo $env_map | jq -r ".$target"`
 
-            if [ "$source" != "null" ]; then
-              echo "source=$source" >> "$GITHUB_OUTPUT"
-            else
-              echo "Unable to calculate source for ${{ inputs.environment-target }}." >> $GITHUB_STEP_SUMMARY
-              exit 1
-            fi
+          if [ "$source" != "null" ]; then
+            echo "source=$source" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unable to calculate source for ${{ inputs.environment-target }}." >> $GITHUB_STEP_SUMMARY
+            exit 1
           fi
         env:
           default-tag-map: > # Note that this is a JSON string
