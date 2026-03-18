@@ -129,10 +129,7 @@ jobs:
         env:
           default-tag-map: > # Note that this is a JSON string
             {
-              "development": "development",
-              "test": "development",
-              "staging": "test",
-              "production": "staging"
+              "test": "development"
             }
 
   promote-tag:
