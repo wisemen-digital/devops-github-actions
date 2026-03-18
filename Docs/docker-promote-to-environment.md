@@ -2,9 +2,12 @@
 
 ## Description
 
-This workflow will grab the existing docker image & tag, and triggers either a cluster rollout or a serverless redeploy. It essentially just re-tags an image and rolls it out. If kubernetes labels are provided, the list of deployments will **not** be used.
+This workflow will grab the existing docker image & tag, and triggers either a cluster rollout or a serverless redeploy. It essentially just re-tags an image and rolls it out.
 
-It will calculate the "source" enviroment based on the "target" environment. This will be done based on the usual order of `development -> test -> staging -> production`.
+It will calculate the "source" enviroment based on the "target" environment. This will be done with this default mapping (which can be overridden using vars):
+
+- `development` -> `test`
+- `staging` -> `sandbox`
 
 ### K8S Cluster Rollout
 
@@ -22,7 +25,6 @@ A redeploy on an existing Serverless Container. It does not create or update the
 | ----- | ----------- | -------- |
 | `vendor` | The vendor to communicate with (azure, digitalocean, scaleway) | Yes |
 | `environment-target` | Target environment to deploy to | Yes |
-| `environment-map` | Custom environment mapping (JSON object) | Yes |
 | `image` | Image name. Defaults to repository name | No |
 | `image-variants` | List of variants to build (folders in monorepo, separated by commas) | No |
 
@@ -33,6 +35,7 @@ These are always available, regardless of vendor:
 | Name | Description | Type | Required |
 | ---- | ----------- | ---- | -------- |
 | `CONTAINER_REGISTRY_ENDPOINT` | Container registry endpoint. Defaults to `docker.io` | Variable | No |
+| `ENVIRONMENT_TAG_MAP` | Environment map (JSON, fallback to default map) used to calculate source based on target | Variable | No |
 | `K8S_CLUSTER_ID` | Target cluster ID | Variable | No |
 | `K8S_DEPLOYMENTS` | List of deployments to rollout, separated by commas or spaces | Variable | No |
 | `K8S_LABELS` | List of labels to rollout, separated by commas or spaces | Variable | No |

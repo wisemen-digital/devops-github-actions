@@ -9,6 +9,7 @@ on:
   workflow_call:
     # Depends on the following vars
     # - CONTAINER_REGISTRY_ENDPOINT
+    # - ENVIRONMENT_TAG_MAP
     # - K8S_CLUSTER_ID
     # - K8S_DEPLOYMENTS
     # - K8S_LABELS
@@ -32,10 +33,6 @@ on:
         description: Target environment to deploy TO
         type: string
         required: true
-      environment-map:
-        description: Environment map (JSON, fallback to default map)
-        type: string
-        required: false
       image:
         description: Image name (fallback to repository name)
         type: string
@@ -109,7 +106,7 @@ jobs:
           target=`echo ${{ inputs.environment-target }} | tr '[:upper:]' '[:lower:]'`
           echo "target=$target" >> "$GITHUB_OUTPUT"
 
-          env_map='${{ inputs.environment-map || env.default-tag-map }}'
+          env_map='${{ vars.ENVIRONMENT_TAG_MAP || env.default-tag-map }}'
           source=`echo $env_map | jq -r ".$target"`
 
           if [ "$source" != "null" ]; then
@@ -121,6 +118,7 @@ jobs:
         env:
           default-tag-map: > # Note that this is a JSON string
             {
+              "sandbox": "staging",
               "test": "development"
             }
 
