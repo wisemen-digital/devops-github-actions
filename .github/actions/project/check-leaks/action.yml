@@ -16,3 +16,4 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-access-token }}
         GITLEAKS_CONFIG: ${{ github.action_path }}/defaults/gitleaks.toml
         GITLEAKS_LICENSE: requested-key-multiple-times-but-got-no-reply-12345
+        GITLEAKS_VERSION: latest

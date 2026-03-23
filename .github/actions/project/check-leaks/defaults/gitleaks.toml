@@ -17,5 +17,5 @@ regexes = [
 description = "Don't check test assets"
 paths = [
   '''apps/(.*?)/tests/(.*?)\.json$''',
-  '''apps/(.*?)/.env.test''',
+  '''apps/(.*?)/\.env\.test$''',
 ]
