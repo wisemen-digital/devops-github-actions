@@ -44,6 +44,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Prepare .env (needed for some old projects)
+        run: cp -f .env.example .env
       # Dependencies
       - name: Get Composer Cache Directory
         id: composer-cache
@@ -109,8 +111,8 @@ jobs:
         run: |
           cp -f .env.testing .env
           sed -i '/^DB_/d' .env
-          php artisan key:generate
-          php artisan passport:keys
+          php artisan key:generate --force
+          php artisan passport:keys --force
           cp -f .env .env.testing
           php artisan config:cache
           php artisan migrate --seed
