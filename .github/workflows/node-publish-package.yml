@@ -67,7 +67,7 @@ jobs:
         with:
           ref: ${{ env.git-ref }}
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
       - name: Install Node.js
         uses: actions/setup-node@v6
         with:
@@ -89,7 +89,7 @@ jobs:
         with:
           ref: ${{ env.git-ref }}
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
       - name: Install Node.js
         uses: actions/setup-node@v6
         with:
