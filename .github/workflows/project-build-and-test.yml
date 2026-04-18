@@ -196,7 +196,7 @@ jobs:
           health-checks: ${{ toJSON(matrix.app.health-checks) }}
       - name: Run tests
         if: ${{ matrix.app.skip != true }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@feature/tbn-867-moeizaam-om-gefaalde-testen-in-pipeline-te-zien
         with:
           app: ${{ matrix.app.path }}
           pnpm-filter-args: '--filter ${{ matrix.app.path }}'
