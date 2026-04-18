@@ -21,7 +21,7 @@ start_log_group "Run Vue Unit tests"
     --outputFile=$JUNIT_REPORT_FILE
   )
 
-  pnpm vitest --run "${TEST_REPORTER_OPTIONS[@]}"
+  pnpm vitest --passWithNoTests --run "${TEST_REPORTER_OPTIONS[@]}"
 
   # Fix node test reporter not setting a 'testsuites.name' (VITEST_JUNIT_SUITE_NAME is obsolete)
   if [ -f "$JUNIT_REPORT_FILE" ]; then
