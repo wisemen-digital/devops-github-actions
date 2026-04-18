@@ -230,4 +230,4 @@ jobs:
           include_empty_in_summary: false
           report_paths: '**/*-test-report-junit.xml'
           require_passed_tests: false
-          simplified_summary: true
+          detailed_summary: true
