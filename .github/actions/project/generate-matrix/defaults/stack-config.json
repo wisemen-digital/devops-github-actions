@@ -70,6 +70,10 @@
         "services": {
         }
     },
+    "payload": {
+        "services": {
+        }
+    },
     "vue": {
         "container": {
             "image": "PLACEHOLDER_VUE_CONTAINER_IMAGE",
