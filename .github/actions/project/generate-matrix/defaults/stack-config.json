@@ -1,6 +1,17 @@
 {
     "nest": {
         "services": {
+            "mailpit": {
+                "env": {
+                    "MP_SMTP_AUTH_ACCEPT_ANY": "1",
+                    "MP_SMTP_AUTH_ALLOW_INSECURE": "1"
+                },
+                "image": "PLACEHOLDER_MAILPIT_IMAGE",
+                "ports": [
+                    "1025:1025",
+                    "8025:8025"
+                ]
+            },
             "mssql": {
                 "env": {
                     "ACCEPT_EULA": "Y",
@@ -60,6 +71,7 @@
             }
         },
         "health-checks": {
+            "mailpit": "nc -z localhost 8025",
             "mssql": "nc -z localhost 1433",
             "mysql": "mysql -h localhost -u root -prootpassword -e 'SELECT 1;' testdb",
             "postgres": "PGPASSWORD=password psql --host=localhost --username=postgres --dbname=test_db -c '\\q'",

@@ -29,6 +29,14 @@ on:
         description: Image to use for MSSQL test DB (defaults to normal image)
         default: 'mcr.microsoft.com/mssql/server:2022-latest'
         type: string
+      test-mailpit-enabled:
+        description: Enable Mailpit test service (defaults to false)
+        default: false
+        type: boolean
+      test-mailpit-image:
+        description: Image to use for Mailpit test service (defaults to normal image)
+        default: 'axllent/mailpit:v1.29'
+        type: string
       test-mysql-enabled:
         description: Enable MYSQL test service (defaults to false)
         default: false
@@ -103,6 +111,8 @@ jobs:
         id: gen-matrix
         uses: wisemen-digital/devops-github-actions/.github/actions/project/generate-matrix@v1
         with:
+          mailpit-enabled: ${{ inputs.test-mailpit-enabled }}
+          mailpit-image: ${{ inputs.test-mailpit-image }}
           mssql-enabled: ${{ inputs.test-mssql-enabled }}
           mssql-image: ${{ inputs.test-mssql-image }}
           mysql-enabled: ${{ inputs.test-mysql-enabled }}
