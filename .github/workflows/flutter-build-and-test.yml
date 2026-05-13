@@ -165,6 +165,14 @@ jobs:
         shell: bash
         run: |
           rsync -a --ignore-existing --remove-source-files tmp-artifacts/app-lib/* lib
+          if [ -d "./tmp-artifacts/app-lib/packages" ]; then
+            for package in ./tmp-artifacts/app-lib/packages/*; do
+              packageName=$(basename "$package")
+              if [ -d "$package" ]; then
+                rsync -a --ignore-existing --remove-source-files "$package/" "packages/$packageName/"
+              fi
+            done
+          fi
           rm -rf tmp-artifacts/app-lib/
           rsync -a --ignore-existing --remove-source-files tmp-artifacts/intl/* lib/generated
           rm -rf tmp-artifacts/intl/
