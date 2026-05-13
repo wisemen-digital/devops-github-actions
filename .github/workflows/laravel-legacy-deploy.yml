@@ -98,6 +98,7 @@ jobs:
             --include=public/index.php \
             --exclude=.env \
             --exclude=.git \
+            --exclude=node_modules \
             --exclude=tests \
             --exclude='public/*' \
             --exclude=storage/logs \
@@ -109,10 +110,13 @@ jobs:
           ssh ${{ vars.DEPLOY_URL }} << EOF
             cd www/htdocs
             mkdir -p storage/framework/sessions
-            find storage -type d -exec chmod 775 {} \;
-            find storage -type f -exec chmod 664 {} \;
+
             find bootstrap/cache -type d -exec chmod 775 {} \;
             find bootstrap/cache -type f -exec chmod 664 {} \;
+            find storage -type d -exec chmod 775 {} \;
+            find storage -type f ! -path 'storage/oauth-*key' -exec chmod 664 {} \;
+            chmod 600 storage/oauth-*.key
+
             php artisan storage:link
           EOF
       - name: Migrate database
