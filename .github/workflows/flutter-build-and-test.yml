@@ -98,7 +98,7 @@ jobs:
       - name: Upload generated code
         uses: actions/upload-artifact@v4
         with:
-          name: melos-app-lib
+          name: app-lib
           path: |
             lib
             packages
