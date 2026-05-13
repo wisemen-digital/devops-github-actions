@@ -151,7 +151,7 @@ jobs:
     strategy:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
-    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
+    if: ${{ always() && needs.generate-matrix.outputs.deployments != '[]' && (needs.generate-code.result == 'success' || needs.generate-code-melos.result == 'success') }}
     env:
       WORKING_DIRECTORY: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
     steps:
