@@ -29,6 +29,10 @@ on:
         description: Skip reporting coverage to Codecov (defaults to false)
         default: false
         type: boolean
+      use-melos:
+        description: Whether to use Melos for build runner
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -71,10 +75,39 @@ jobs:
         with:
           filter-file: .github/package-filters.yaml
 
+  generate-code-melos:
+    needs: [generate-matrix, verify-formatting]
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.build-timeout }}
+    if: ${{ inputs.use-melos }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Run flutter pub get
+        run: flutter pub get
+      - name: Initialize Melos
+        uses: bluefireteam/melos-action@v3
+        with:
+          run-bootstrap: false
+      - name: Generate code with Melos
+        run: melos build
+      - name: Upload generated code
+        uses: actions/upload-artifact@v4
+      - name: Upload generated code
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.deployment.path == '.' && 'app-lib' || matrix.deployment.path }}
+          path: ${{ matrix.deployment.path == '.' && 'lib' || format('packages/{0}', matrix.deployment.path) }}
+
   generate-code:
     needs: [generate-matrix, verify-formatting]
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout }}
+    if: ${{ !inputs.use-melos }}
     strategy:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
@@ -96,8 +129,8 @@ jobs:
       - name: Upload generated code
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.deployment.path == '.' && 'app-lib' || matrix.deployment.path }}
-          path: ${{ matrix.deployment.path == '.' && 'lib' || format('packages/{0}', matrix.deployment.path) }}
+          name: melos-app-lib
+          path: ./
 
   merge:
     runs-on: ubuntu-latest
@@ -111,7 +144,7 @@ jobs:
           separate-directories: true
 
   test:
-    needs: [generate-matrix, generate-code, merge]
+    needs: [generate-matrix, generate-code, merge, generate-code-melos]
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
     strategy:
