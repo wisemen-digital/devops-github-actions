@@ -134,7 +134,8 @@ jobs:
 
   merge:
     runs-on: ubuntu-latest
-    needs: [generate-code]
+    needs: [generate-code, generate-code-melos]
+    if: ${{ always() && (needs.generate-code.result == 'success' || needs.generate-code-melos.result == 'success') }}
     steps:
       - name: Merge Artifacts
         uses: actions/upload-artifact/merge@v4
@@ -144,7 +145,7 @@ jobs:
           separate-directories: true
 
   test:
-    needs: [generate-matrix, generate-code, merge, generate-code-melos]
+    needs: [generate-matrix, merge]
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
     strategy:
