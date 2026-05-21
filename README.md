@@ -9,7 +9,9 @@ Docker deployments:
 | Workflow | Description |
 | -------- | ----------- |
 | [docker-build-and-deploy.yml](Docs/docker-build-and-deploy.md) | Build & deploy docker image to given environment |
+| [docker-build-and-deploy-container.yml](Docs/docker-build-and-deploy-container.md) | Build & redeploy a Scaleway Serverless Container |
 | [docker-promote-to-environment.yml](Docs/docker-promote-to-environment.md) | Promote image to given environment |
+| [docker-promote-to-environment-container.yml](Docs/docker-promote-to-environment-container.md) | Promote image and redeploy a Scaleway Serverless Container |
 
 Verification (PR check):
 

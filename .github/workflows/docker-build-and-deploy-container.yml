@@ -1,0 +1,122 @@
+---
+name: Build & deploy to Scaleway Serverless Container
+
+#
+# Build the docker image, and trigger a redeploy on a Scaleway Serverless Container.
+#
+
+on:
+  workflow_call:
+    # Depends on the following vars
+    # - CONTAINER_PLATFORMS
+    # - CONTAINER_REGISTRY_ENDPOINT
+    # - RUNNER_INFRA
+    # - SCALEWAY_ORGANIZATION_ID
+    # - SCALEWAY_PROJECT_ID
+    # - SCALEWAY_REGION
+    # - SCALEWAY_SERVERLESS_CONTAINER_ID
+    inputs:
+      environment:
+        description: Target environment to deploy to
+        type: string
+        required: true
+      image:
+        description: Image name (fallback to repository name)
+        type: string
+        required: false
+    secrets:
+      SCALEWAY_ACCESS_KEY:
+        description: Scaleway API key ID
+        required: true
+      SCALEWAY_SECRET_KEY:
+        description: Scaleway API key secret
+        required: true
+
+jobs:
+  build-and-deploy:
+    name: Build & deploy to ${{ inputs.environment }}
+    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Validate inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          function validate-required-input {
+            if [ -z "$2" ]; then
+              echo "Missing input: $1"
+              exit 1
+            fi
+          }
+
+          validate-required-input SCALEWAY_ORGANIZATION_ID '${{ vars.SCALEWAY_ORGANIZATION_ID }}'
+          validate-required-input SCALEWAY_PROJECT_ID '${{ vars.SCALEWAY_PROJECT_ID }}'
+          validate-required-input SCALEWAY_REGION '${{ vars.SCALEWAY_REGION }}'
+          validate-required-input SCALEWAY_SERVERLESS_CONTAINER_ID '${{ vars.SCALEWAY_SERVERLESS_CONTAINER_ID }}'
+
+      - name: Setup Docker environment
+        id: setup
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/setup@v1
+        with:
+          vendor: scaleway
+          container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
+          github-access-token: ${{ secrets.GITHUB_TOKEN }}
+          image: ${{ inputs.image }}
+          prepare-for-building: true
+          platforms: ${{ vars.CONTAINER_PLATFORMS || 'linux/amd64' }}
+          login-ghcr: false
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+
+      - name: Calculate image metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_ref="${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}"
+          image_tag="${{ inputs.environment || github.ref_name }}"
+          image_tag="$(echo "$image_tag" | sed 's#/#_#g')"
+
+          echo "image_ref=${image_ref}" >> "$GITHUB_ENV"
+          echo "image_tag=${image_tag}" >> "$GITHUB_ENV"
+          echo "image_with_tag=${image_ref}:${image_tag}" >> "$GITHUB_ENV"
+          echo "timestamp=$(date +'%Y-%m-%dT%H:%M:%S')" >> "$GITHUB_ENV"
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ vars.CONTAINER_PLATFORMS || 'linux/amd64' }}
+          push: true
+          tags: ${{ env.image_with_tag }}
+          cache-from: type=registry,ref=${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}:buildcache
+          cache-to: type=registry,ref=${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}:buildcache,mode=max
+          build-args: |
+            BUILD_COMMIT=${{ github.sha }}
+            BUILD_NUMBER=${{ github.run_number }}
+            BUILD_TIMESTAMP=${{ env.timestamp }}
+
+      - name: Redeploy Scaleway Serverless Container
+        id: redeploy
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/redeploy@v1
+        with:
+          container-id: ${{ vars.SCALEWAY_SERVERLESS_CONTAINER_ID }}
+          scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+          scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
+          scaleway-region: ${{ vars.SCALEWAY_REGION }}
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+
+      - name: Deployment summary
+        shell: bash
+        run: |
+          {
+            echo "## Scaleway Serverless Container deployment"
+            echo ""
+            echo "- Image: \`${{ env.image_with_tag }}\`"
+            echo "- Region: \`${{ vars.SCALEWAY_REGION }}\`"
+            echo "- Container ID: \`${{ vars.SCALEWAY_SERVERLESS_CONTAINER_ID }}\`"
+            echo "- Organization ID: \`${{ vars.SCALEWAY_ORGANIZATION_ID }}\`"
+            echo "- Project ID: \`${{ vars.SCALEWAY_PROJECT_ID }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
