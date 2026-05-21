@@ -8,7 +8,7 @@ start_log_group "Run Node tests"
 (
   JUNIT_REPORT_FILE=${APP}-test-report-junit.xml
   NODE_OPTIONS_ARRAY=(
-    --test-reporter=spec
+    --test-reporter=dot
     --test-reporter-destination=stdout
   )
   if_not_debug && NODE_OPTIONS_ARRAY+=(
