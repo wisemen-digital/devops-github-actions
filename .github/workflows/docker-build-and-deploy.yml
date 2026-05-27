@@ -16,6 +16,7 @@ on:
     # - K8S_NAMESPACE
     # - RUNNER_DEFAULT
     # - RUNNER_INFRA
+    # - SERVERLESS_CONTAINER_ID
     # For Azure vendor:
     # - AZURE_RESOURCE_GROUP
     # For DigitalOcean vendor:
@@ -154,6 +155,7 @@ jobs:
             BUILD_TIMESTAMP=${{ env.timestamp }}
       # Rollout
       - name: Rollout on cluster
+        if: ${{ vars.K8S_CLUSTER_ID }}
         uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@v1
         with:
           vendor: ${{ inputs.vendor }}
@@ -174,3 +176,41 @@ jobs:
           scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
           scaleway-region: ${{ vars.SCALEWAY_REGION }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Redeploy Serverless Container
+        if: ${{ vars.SERVERLESS_CONTAINER_ID }}
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/redeploy@v1
+        with:
+          vendor: ${{ inputs.vendor }}
+          container-id: ${{ vars.SCALEWAY_SERVERLESS_CONTAINER_ID }}
+          # Vendor: azure
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          # Vendor: digitalocean
+          digitalocean-api-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          # Vendor: scaleway
+          scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          scaleway-organization-id: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+          scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
+          scaleway-region: ${{ vars.SCALEWAY_REGION }}
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Deployment summary
+        if: ${{ vars.K8S_CLUSTER_ID && !vars.SERVERLESS_CONTAINER_ID }}
+        run: |
+          if [[ -z "${{ vars.K8S_CLUSTER_ID }}"  && -z "${{ vars.SERVERLESS_CONTAINER_ID }}" ]]; then
+            echo "::error title=MISSING TARGET::No k8s cluster or serverless container provided!"
+            exit 1
+          fi
+
+          {
+            echo "## Docker build & deploy"
+            echo ""
+            echo "- Image: \`${{ env.tags }}\`"
+            echo "- Vendor: \`${{ inputs.vendor }}\`"
+            if [ -n "${{ vars.K8S_CLUSTER_ID }}" ]; then
+              echo "- Cluster: \`${{ vars.K8S_CLUSTER_ID }}\`"
+            fi
+            if [ -n "${{ vars.SERVERLESS_CONTAINER_ID }}" ]; then
+              echo "- Container: \`${{ vars.SERVERLESS_CONTAINER_ID }}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
