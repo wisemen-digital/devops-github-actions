@@ -1,6 +1,6 @@
 ---
-name: Serverless Container Redeploy
-description: Trigger a redeploy on a Serverless Container
+name: Serverless Container Setup
+description: Prepare tooling for communication with infra
 inputs:
   vendor:
     description: The vendor to communicate with (azure, digitalocean, scaleway)
@@ -42,11 +42,34 @@ inputs:
 runs:
   using: composite
   steps:
-    # Vendor setup
-    - uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/setup@v1
+    # Validate inputs (common setup validates the rest)
+    - name: Validate inputs
+      shell: bash
+      run: |
+        function validate-required-input {
+          if [ -z "$2" ]; then echo "Missing input: $1"; exit 1; fi
+        }
+
+        echo "Validating inputs for vendor: ${{ inputs.vendor }}"
+        case "${{ inputs.vendor }}" in
+          azure)
+            validate-required-input azure-resource-group '${{ inputs.azure-resource-group }}'
+            ;;
+          digitalocean)
+            ;;
+          scaleway)
+            validate-required-input scaleway-region '${{ inputs.scaleway-region }}'
+            ;;
+          *)
+            echo "Unsupported vendor '${{ inputs.vendor }}'"
+            exit 1
+            ;;
+        esac
+
+    # Vendor common setup
+    - uses: wisemen-digital/devops-github-actions/.github/actions/infra/common/setup@v1
       with:
         vendor: ${{ inputs.vendor }}
-        container-id: ${{ inputs.container-id }}
         # Vendor: azure
         azure-client-id: ${{ inputs.azure-client-id }}
         azure-tenant-id: ${{ inputs.azure-tenant-id }}
@@ -56,21 +79,5 @@ runs:
         # Vendor: scaleway
         scaleway-organization-id: ${{ inputs.scaleway-organization-id }}
         scaleway-project-id: ${{ inputs.scaleway-project-id }}
-        scaleway-region: ${{ inputs.scaleway-region }}
         scaleway-access-key: ${{ inputs.scaleway-access-key }}
         scaleway-secret-key: ${{ inputs.scaleway-secret-key }}
-
-    - name: Trigger redeploy
-      shell: bash
-      run: |
-        set -euo pipefail
-
-        case "${{ inputs.vendor }}" in
-          scaleway)
-            scw container container redeploy "${{ inputs.container-id }}" region="${{ inputs.scaleway-region }}"
-            ;;
-          *)
-            echo "Unsupported vendor '${{ inputs.vendor }}'"
-            exit 1
-            ;;
-        esac
