@@ -88,8 +88,10 @@ jobs:
       - name: Extract archive
         run: tar xzf dist.tar.gz && rm dist.tar.gz
       # Pre-deploy: turn server off
+      # Note: run using specific version of PHP, because composer does a platform
+      #   check, and the PHP version may mismatch here
       - name: Enable maintenance mode
-        run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan down"
+        run: ssh ${{ vars.DEPLOY_URL }} "php${{ inputs.php-version }} www/htdocs/artisan down"
       # Deploy
       - name: Upload files
         run: |
