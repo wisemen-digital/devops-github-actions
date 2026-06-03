@@ -33,6 +33,13 @@ runs:
         done <<< "$changed_apps"
 
         echo "pnpm_filter_args=${FILTER_ARGS[@]}" >> "$GITHUB_OUTPUT"
+    # Disable telemetry
+    - name: Disable Turbo telemetry
+      shell: bash
+      if: ${{ hashFiles('turbo.json') != '' }}
+      run: |
+        echo "Disabling `turbo` telemtry…"
+        echo "TURBO_TELEMETRY_DISABLED=1" >> $GITHUB_ENV
     # Prep. Node environment
     - name: Checkout
       uses: actions/checkout@v6
