@@ -1,0 +1,45 @@
+---
+name: Scaleway Serverless Container Redeploy
+description: Trigger a redeploy on a Scaleway Serverless Container
+inputs:
+  container-id:
+    description: Target Scaleway Serverless container ID
+    required: true
+  scaleway-organization-id:
+    description: Scaleway organization ID
+    required: true
+  scaleway-project-id:
+    description: Scaleway project ID
+    required: true
+  scaleway-region:
+    description: Scaleway deployment region (such as nl-ams)
+    required: true
+  scaleway-access-key:
+    description: Scaleway API key ID
+    required: true
+  scaleway-secret-key:
+    description: Scaleway API key secret
+    required: true
+outputs:
+  container-id:
+    description: Target Scaleway Serverless container ID
+    value: ${{ inputs.container-id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install scw tool
+      uses: scaleway/action-scw@v0
+      with:
+        access-key: ${{ inputs.scaleway-access-key }}
+        secret-key: ${{ inputs.scaleway-secret-key }}
+        default-organization-id: ${{ inputs.scaleway-organization-id }}
+        default-project-id: ${{ inputs.scaleway-project-id }}
+        export-config: true
+        save-config: true
+
+    - name: Trigger redeploy
+      shell: bash
+      run: |
+        set -euo pipefail
+        scw container container redeploy "${{ inputs.container-id }}" region="${{ inputs.scaleway-region }}"

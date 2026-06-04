@@ -6,6 +6,7 @@ This workflow will lint, build & test one or more projects in a monorepo. It sup
 
 - NestJS
 - Nuxt
+- Payload
 - Vue.js
 
 You must provide a `.github/monorepo-rollout-filters.yaml` file so the workflow can check which projects changed in a PR (so we can run only what's needed). In the file, each key must be annotated with the stack for that project. For example:
@@ -29,6 +30,7 @@ Note that the tests are run depending on the stack:
 
 - NestJS: native Node test runner, invokes `test:setup` and `test:run` package commands.
 - Nuxt: uses `nuxi prepare` and then `vitest`.
+- Payload: uses `vitest` for unit tests.
 - Vue.js: uses `vitest` for unit tests, and playwright for E2E tests.
 
 ## Inputs

@@ -3,6 +3,12 @@ name: Generate Build & Test Matrix
 description: |
   Generate build matrix based on changes, adding in configs as needed
 inputs:
+  mailpit-enabled:
+    description: Enable Mailpit test service
+    required: true
+  mailpit-image:
+    description: Image to use for Mailpit test service
+    required: false
   mssql-enabled:
     description: Enable MSSQL test service
     required: true
@@ -55,6 +61,7 @@ runs:
       id: process-inputs
       shell: bash
       run: |
+        export PLACEHOLDER_MAILPIT_IMAGE=${{ inputs.mailpit-enabled == 'true' && inputs.mailpit-image || '' }}
         export PLACEHOLDER_MSSQL_IMAGE=${{ inputs.mssql-enabled == 'true' && inputs.mssql-image || '' }}
         export PLACEHOLDER_MYSQL_IMAGE=${{ inputs.mysql-enabled == 'true' && inputs.mysql-image || '' }}
         export PLACEHOLDER_NATS_IMAGE=${{ inputs.nats-enabled == 'true' && inputs.nats-image || '' }}
