@@ -127,7 +127,7 @@ jobs:
             fi
           fi
         env:
-          default-tag-map: >  # Note that this is a JSON string
+          default-tag-map: > # Note that this is a JSON string
             {
               "development": "development",
               "test": "development",
@@ -199,7 +199,7 @@ jobs:
         uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/redeploy@v1
         with:
           vendor: ${{ inputs.vendor }}
-          container-id: ${{ vars.SCALEWAY_SERVERLESS_CONTAINER_ID }}
+          container-id: ${{ vars.SERVERLESS_CONTAINER_ID }}
           # Vendor: azure
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
