@@ -88,8 +88,10 @@ jobs:
       - name: Extract archive
         run: tar xzf dist.tar.gz && rm dist.tar.gz
       # Pre-deploy: turn server off
+      # Note: run using specific version of PHP, because composer does a platform
+      #   check, and the PHP version may mismatch here
       - name: Enable maintenance mode
-        run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan down"
+        run: ssh ${{ vars.DEPLOY_URL }} "php${{ inputs.php-version }} www/htdocs/artisan down"
       # Deploy
       - name: Upload files
         run: |
@@ -98,6 +100,7 @@ jobs:
             --include=public/index.php \
             --exclude=.env \
             --exclude=.git \
+            --exclude=node_modules \
             --exclude=tests \
             --exclude='public/*' \
             --exclude=storage/logs \
@@ -109,15 +112,19 @@ jobs:
           ssh ${{ vars.DEPLOY_URL }} << EOF
             cd www/htdocs
             mkdir -p storage/framework/sessions
-            find storage -type d -exec chmod 775 {} \;
-            find storage -type f -exec chmod 664 {} \;
+
             find bootstrap/cache -type d -exec chmod 775 {} \;
             find bootstrap/cache -type f -exec chmod 664 {} \;
+            find storage -type d -exec chmod 775 {} \;
+            find storage -type f ! -path 'storage/oauth-*key' -exec chmod 664 {} \;
+            chmod 600 storage/oauth-*.key
+
             php artisan storage:link
           EOF
       - name: Migrate database
         run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan migrate --force"
       - name: Clear permissions cache
+        continue-on-error: true
         run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan permission:cache-reset"
       - name: Restart queues
         run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan queue:restart"
