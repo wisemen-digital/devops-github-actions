@@ -2,9 +2,17 @@
 
 ## Description
 
-This workflow will grab the existing docker image & tag, and re-deploy it to the given environment (kubernetes rollout). It essentially just re-tags an image and rolls it out. If kubernetes labels are provided, the list of deployments will **not** be used.
+This workflow will grab the existing docker image & tag, and triggers either a cluster rollout or a serverless redeploy. It essentially just re-tags an image and rolls it out. If kubernetes labels are provided, the list of deployments will **not** be used.
 
 If you don't provide a source environment to deploy "from", it will calculate it based on the "target" environment. This will be done based on the usual order of `development -> test -> staging -> production`.
+
+### K8S Cluster Rollout
+
+A rollout on a cluster in the given namespace. If kubernetes labels are provided, the list of deployments will **not** be used.
+
+### Serverless Container Redeploy
+
+A redeploy on an existing Serverless Container. It does not create or update the Serverless Container configuration. The target container must already exist and already be configured to pull the image tag that this workflow publishes.
 
 ## Inputs
 
@@ -26,12 +34,13 @@ These are always available, regardless of vendor:
 | Name | Description | Type | Required |
 | ---- | ----------- | ---- | -------- |
 | `CONTAINER_REGISTRY_ENDPOINT` | Container registry endpoint. Defaults to `docker.io` | Variable | No |
-| `K8S_CLUSTER_ID` | Target cluster ID | Variable | Yes |
+| `K8S_CLUSTER_ID` | Target cluster ID | Variable | No |
 | `K8S_DEPLOYMENTS` | List of deployments to rollout, separated by commas or spaces | Variable | No |
 | `K8S_LABELS` | List of labels to rollout, separated by commas or spaces | Variable | No |
 | `K8S_NAMESPACE` | Target cluster namespace | Variable | Yes |
 | `RUNNER_DEFAULT` | The CI runner for default actions. Defaults to `ubuntu-latest` | Variable | No |
 | `RUNNER_INFRA` | The CI runner for infra actions. Defaults to `ubuntu-latest` | Variable | No |
+| `SERVERLESS_CONTAINER_ID` | Target Serverless Container ID to redeploy | Variable | No |
 
 ### Vendor-Specific Inputs
 

@@ -45,7 +45,7 @@ inputs:
 runs:
   using: composite
   steps:
-    # Validate inputs
+    # Validate inputs (common setup validates the rest)
     - name: Validate inputs
       shell: bash
       run: |
@@ -56,20 +56,12 @@ runs:
         echo "Validating inputs for vendor: ${{ inputs.vendor }}"
         case "${{ inputs.vendor }}" in
           azure)
-            validate-required-input azure-client-id '${{ inputs.azure-client-id }}'
-            validate-required-input azure-tenant-id '${{ inputs.azure-tenant-id }}'
-            validate-required-input azure-subscription-id '${{ inputs.azure-subscription-id }}'
             validate-required-input azure-resource-group '${{ inputs.azure-resource-group }}'
             ;;
           digitalocean)
-            validate-required-input digitalocean-api-token '${{ inputs.digitalocean-api-token }}'
             ;;
           scaleway)
-            validate-required-input scaleway-access-key '${{ inputs.scaleway-access-key }}'
-            validate-required-input scaleway-organization-id '${{ inputs.scaleway-organization-id }}'
-            validate-required-input scaleway-project-id '${{ inputs.scaleway-project-id }}'
             validate-required-input scaleway-region '${{ inputs.scaleway-region }}'
-            validate-required-input scaleway-secret-key '${{ inputs.scaleway-secret-key }}'
             ;;
           *)
             echo "Unsupported vendor '${{ inputs.vendor }}'"
@@ -77,21 +69,23 @@ runs:
             ;;
         esac
 
+    # Vendor common setup
+    - uses: wisemen-digital/devops-github-actions/.github/actions/infra/common/setup@v1
+      with:
+        vendor: ${{ inputs.vendor }}
+        # Vendor: azure
+        azure-client-id: ${{ inputs.azure-client-id }}
+        azure-tenant-id: ${{ inputs.azure-tenant-id }}
+        azure-subscription-id: ${{ inputs.azure-subscription-id }}
+        # Vendor: digitalocean
+        digitalocean-api-token: ${{ inputs.digitalocean-api-token }}
+        # Vendor: scaleway
+        scaleway-organization-id: ${{ inputs.scaleway-organization-id }}
+        scaleway-project-id: ${{ inputs.scaleway-project-id }}
+        scaleway-access-key: ${{ inputs.scaleway-access-key }}
+        scaleway-secret-key: ${{ inputs.scaleway-secret-key }}
+
     # Vendor: Azure
-    - name: Set up kubelogin for non-interactive login
-      if: ${{ inputs.vendor == 'azure' }}
-      uses: azure/use-kubelogin@v1
-      with:
-        kubelogin-version: 'latest'
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-    - name: Azure Login
-      if: ${{ inputs.vendor == 'azure' }}
-      uses: azure/login@v2
-      with:
-        client-id: ${{ inputs.azure-client-id }}
-        tenant-id: ${{ inputs.azure-tenant-id }}
-        subscription-id: ${{ inputs.azure-subscription-id }}
     - name: Save Azure kubeconfig
       if: ${{ inputs.vendor == 'azure' }}
       uses: azure/aks-set-context@v4
@@ -102,27 +96,12 @@ runs:
         use-kubelogin: 'true'
 
     # Vendor: Digitalocean
-    - name: Install doctl tool
-      if: ${{ inputs.vendor == 'digitalocean' }}
-      uses: digitalocean/action-doctl@v2
-      with:
-        token: ${{ inputs.digitalocean-api-token }}
     - name: Save DigitalOcean kubeconfig
       if: ${{ inputs.vendor == 'digitalocean' }}
       shell: bash
       run: doctl k8s cluster kubeconfig save ${{ inputs.cluster-id }}
 
     # Vendor: Scaleway
-    - name: Install scw tool
-      if: ${{ inputs.vendor == 'scaleway' }}
-      uses: scaleway/action-scw@v0
-      with:
-        access-key: ${{ inputs.scaleway-access-key }}
-        secret-key: ${{ inputs.scaleway-secret-key }}
-        default-organization-id: ${{ inputs.scaleway-organization-id }}
-        default-project-id: ${{ inputs.scaleway-project-id }}
-        export-config: true
-        save-config: true
     - name: Save Scaleway kubeconfig
       if: ${{ inputs.vendor == 'scaleway' }}
       shell: bash
