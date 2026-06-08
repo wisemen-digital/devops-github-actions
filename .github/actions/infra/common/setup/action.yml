@@ -81,14 +81,6 @@ runs:
         client-id: ${{ inputs.azure-client-id }}
         tenant-id: ${{ inputs.azure-tenant-id }}
         subscription-id: ${{ inputs.azure-subscription-id }}
-    - name: Save Azure kubeconfig
-      if: ${{ inputs.vendor == 'azure' }}
-      uses: azure/aks-set-context@v4
-      with:
-        resource-group: ${{ inputs.azure-resource-group}}
-        cluster-name: ${{ inputs.cluster-id }}
-        admin: 'false'
-        use-kubelogin: 'true'
 
     # Vendor: Digitalocean
     - name: Install doctl tool
@@ -96,10 +88,6 @@ runs:
       uses: digitalocean/action-doctl@v2
       with:
         token: ${{ inputs.digitalocean-api-token }}
-    - name: Save DigitalOcean kubeconfig
-      if: ${{ inputs.vendor == 'digitalocean' }}
-      shell: bash
-      run: doctl k8s cluster kubeconfig save ${{ inputs.cluster-id }}
 
     # Vendor: Scaleway
     - name: Install scw tool
@@ -112,7 +100,3 @@ runs:
         default-project-id: ${{ inputs.scaleway-project-id }}
         export-config: true
         save-config: true
-    - name: Save Scaleway kubeconfig
-      if: ${{ inputs.vendor == 'scaleway' }}
-      shell: bash
-      run: scw k8s kubeconfig install ${{ inputs.cluster-id }} region=${{ inputs.scaleway-region }}
