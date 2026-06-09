@@ -131,7 +131,21 @@ jobs:
           typesense-enabled: ${{ inputs.test-typesense-enabled }}
           typesense-image: ${{ inputs.test-typesense-image }}
 
-  # Then lint & test
+  # Then type check, lint & test
+  type-check:
+    name: Type Check Application
+    needs: [generate-matrix]
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - name: Setup Node environment
+        id: setup
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        with:
+          apps: ${{ needs.generate-matrix.outputs.apps }}
+          node-version: ${{ inputs.node-version }}
+      - name: Type check
+        run: pnpm type-check
   lint:
     name: Lint Application
     needs: [generate-matrix]
