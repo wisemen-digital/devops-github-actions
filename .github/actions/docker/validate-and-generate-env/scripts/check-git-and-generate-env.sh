@@ -22,10 +22,10 @@ elif [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
   if [[ "$BRANCH" == "release/$LATEST_RELEASE" ]]; then
     ENVIRONMENT='staging'
   elif [[ "$BRANCH" == "release/$PREVIOUS_RELEASE" ]]; then
-    echo "Warning: push on previous release branch '$BRANCH', skipping deployment…"
+    echo "::warning title=Invalid Env::Push on previous release branch '$BRANCH', skipping deployment…"
     exit 0
   else
-    echo "Error: push on old/unexpected release branch '$BRANCH'"
+    echo "::error title=Invalid Env::Push on old/unexpected release branch '$BRANCH'"
     exit 1
   fi
 
@@ -34,7 +34,7 @@ elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
   TAG=${GITHUB_REF#refs/tags/}
 
   if ! [[ "${TAG:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "Error: tag '$TAG' is not semantic version 'x.y.z'"
+    echo "::error title=Invalid Env::Tag '$TAG' is not semantic version 'x.y.z'"
     exit 1
   fi
 
@@ -42,7 +42,7 @@ elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
   if [[ "$TAG" == "$LATEST_TAG" ]]; then
     ENVIRONMENT='production'
   else
-    echo "Error: tag $TAG is not the latest version, this is not allowed!"
+    echo "::error title=Invalid Env::Tag $TAG is not the latest version, this is not allowed!"
     exit 1
   fi
 
