@@ -2,7 +2,7 @@
 name: Build & deploy to environment
 
 #
-# Build the docker image, and deploy it to the given environment.
+# Build the docker image, and deploy it to the right environment, depending on the git context.
 #
 
 on:
@@ -27,10 +27,6 @@ on:
     inputs:
       vendor:
         description: The vendor to communicate with (azure, digitalocean, scaleway)
-        type: string
-        required: true
-      environment:
-        description: Target environment to deploy to
         type: string
         required: true
       image:
@@ -78,6 +74,7 @@ jobs:
     name: Validate inputs & generate build matrix
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     outputs:
+      environment: ${{ steps.gen-env.outputs.environment }}
       variants: ${{ steps.gen-matrix.outputs.variants }}
     steps:
       - name: Validate & generate docker workflow inputs
@@ -98,16 +95,19 @@ jobs:
           # Vendor: scaleway
           scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Validate git & generate environment
+        id: gen-env
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/validate-and-generate-env@v1
 
   build-and-deploy:
-    name: Build & Deploy ${{ matrix.variant.path }} to ${{ inputs.environment }}
+    name: Build & Deploy ${{ matrix.variant.path }} to ${{ needs.validate-and-generate-matrix.outputs.environment }}
     needs: [validate-and-generate-matrix]
     if: ${{ needs.validate-and-generate-matrix.outputs.variants != '[]' }}
     strategy:
       matrix:
         variant: ${{ fromJson(needs.validate-and-generate-matrix.outputs.variants) }}
     runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
-    environment: ${{ inputs.environment }}
+    environment: ${{ needs.validate-and-generate-matrix.outputs.environment }}
     steps:
       # Setup
       - name: Setup Docker environment
