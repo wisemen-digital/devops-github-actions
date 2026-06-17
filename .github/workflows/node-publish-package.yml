@@ -67,7 +67,7 @@ jobs:
         with:
           ref: ${{ env.git-ref }}
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
       - name: Install Node.js
         uses: actions/setup-node@v6
         with:
@@ -89,7 +89,7 @@ jobs:
         with:
           ref: ${{ env.git-ref }}
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
       - name: Install Node.js
         uses: actions/setup-node@v6
         with:
@@ -108,7 +108,7 @@ jobs:
           PACKAGES: ${{ inputs.packages }}
       # Try to publish to GH, but is allowed to fail (if already exists)
       - name: Create Github Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         continue-on-error: true
         with:
           name: v${{ inputs.tag }}

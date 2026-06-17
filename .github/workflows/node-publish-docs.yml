@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
       - name: Install Node.js
         uses: actions/setup-node@v6
         with:
@@ -32,7 +32,7 @@ jobs:
       - name: Build documentation
         run: pnpm docs:build
       - name: Store archive
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ${{ inputs.dist-path }}
   deploy:
