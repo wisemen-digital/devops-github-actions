@@ -102,7 +102,9 @@ jobs:
   build-and-deploy:
     name: Build & Deploy ${{ matrix.variant.path }} to ${{ needs.validate-and-generate-matrix.outputs.environment }}
     needs: [validate-and-generate-matrix]
-    if: ${{ needs.validate-and-generate-matrix.outputs.variants != '[]' }}
+    if: |
+      ${{ needs.validate-and-generate-matrix.outputs.environment != '' &&
+        needs.validate-and-generate-matrix.outputs.variants != '[]' }}
     strategy:
       matrix:
         variant: ${{ fromJson(needs.validate-and-generate-matrix.outputs.variants) }}
