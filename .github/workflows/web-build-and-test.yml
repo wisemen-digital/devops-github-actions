@@ -40,10 +40,9 @@ jobs:
           storage-path: s3-wisemen-turbo-cache-shared
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          AWS_S3_FORCE_PATH_STYLE: true
-          AWS_REGION: us-east-1
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          S3_REGION: nl-ams
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -69,10 +68,9 @@ jobs:
           storage-path: s3-wisemen-turbo-cache-shared
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          AWS_S3_FORCE_PATH_STYLE: true
-          AWS_REGION: us-east-1
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          S3_REGION: nl-ams
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -103,10 +101,9 @@ jobs:
           storage-path: s3-wisemen-turbo-cache-shared
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          AWS_S3_FORCE_PATH_STYLE: true
-          AWS_REGION: us-east-1
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          S3_REGION: nl-ams
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -154,10 +151,9 @@ jobs:
           storage-path: s3-wisemen-turbo-cache-shared
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          AWS_S3_FORCE_PATH_STYLE: true
-          AWS_REGION: us-east-1
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          S3_REGION: nl-ams
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -208,10 +204,9 @@ jobs:
           storage-path: s3-wisemen-turbo-cache-shared
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          AWS_S3_FORCE_PATH_STYLE: true
-          AWS_REGION: us-east-1
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          S3_REGION: nl-ams
       - name: Checkout
         uses: actions/checkout@v6
       - name: Download archive
