@@ -85,10 +85,19 @@ on:
         description: Image to use for Typesense test DB (defaults to normal image)
         default: 'typesense/typesense:26.0'
         type: string
+    secrets:
+      TURBO_TOKEN:
+        description: Shared secret matching the Turbo remote cache server's TURBO_TOKEN
+        required: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+env:
+  TURBO_API: https://cache.turbo.internal.appwi.se
+  TURBO_TEAM: ${{ github.event.repository.name }}
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
 jobs:
   # First check for leaks & generate workflow matrix
