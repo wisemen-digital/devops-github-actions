@@ -35,7 +35,7 @@ jobs:
     container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Prepare .env (needed for some old projects)
         run: cp -f .env.example .env
       # Dependencies

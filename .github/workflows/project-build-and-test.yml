@@ -107,11 +107,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Scan for leaks
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/check-leaks@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/check-leaks@v2
         with:
           github-access-token: ${{ github.token }}
   generate-matrix:
@@ -122,7 +122,7 @@ jobs:
     steps:
       - name: Validate & generate docker workflow inputs
         id: gen-matrix
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/generate-matrix@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/generate-matrix@v2
         with:
           mailpit-enabled: ${{ inputs.test-mailpit-enabled }}
           mailpit-image: ${{ inputs.test-mailpit-image }}
@@ -149,7 +149,7 @@ jobs:
     steps:
       - name: Setup Node environment
         id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v2
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
@@ -187,7 +187,7 @@ jobs:
     steps:
       - name: Setup Node environment
         if: ${{ matrix.app.skip != true }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v2
         with:
           node-version: ${{ inputs.node-version }}
       - name: Run build
@@ -200,12 +200,12 @@ jobs:
           fi
       - name: Wait for services to be ready
         if: ${{ matrix.app.skip != true && matrix.app.health-checks != '' && matrix.app.health-checks != '[]' }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/wait-for-services@v2
         with:
           health-checks: ${{ toJSON(matrix.app.health-checks) }}
       - name: Run tests
         if: ${{ matrix.app.skip != true }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@v2
         with:
           app: ${{ matrix.app.path }}
           pnpm-filter-args: '--filter ${{ matrix.app.path }}'

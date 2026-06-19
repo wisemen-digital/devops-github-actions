@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Lint
         uses: aglipanci/laravel-pint-action@latest
         with:
@@ -43,7 +43,7 @@ jobs:
     container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Prepare .env (needed for some old projects)
         run: cp -f .env.example .env
       # Dependencies
