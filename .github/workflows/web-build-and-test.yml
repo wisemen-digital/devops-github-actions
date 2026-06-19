@@ -33,30 +33,14 @@ jobs:
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     timeout-minutes: 5
     steps:
-      - name: TurboRepo Remote Cache Server
-        id: turbo-cache
-        uses: trappar/turborepo-remote-cache-gh-action@main
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
         with:
-          storage-provider: s3
-          storage-path: s3-wisemen-turbo-cache-shared
-        env:
-          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
-          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          S3_REGION: nl-ams
-      - name: Show Turbo cache server logs on failure
-        if: always() && steps.turbo-cache.outcome == 'failure'
-        run: |
-          LOG_DIR="$(node -e 'console.log(require("path").resolve(require("os").tmpdir(), "turborepo-remote-cache-gh-action"))')"
-          echo "Log dir: $LOG_DIR"
-          if [ -d "$LOG_DIR" ]; then
-            for f in "$LOG_DIR"/*.log; do
-              echo "===== $f ====="
-              cat "$f" || true
-            done
-          else
-            echo "No log dir found at $LOG_DIR"
-          fi
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ github.job }}-
+            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -75,30 +59,14 @@ jobs:
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     timeout-minutes: 5
     steps:
-      - name: TurboRepo Remote Cache Server
-        id: turbo-cache
-        uses: trappar/turborepo-remote-cache-gh-action@main
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
         with:
-          storage-provider: s3
-          storage-path: s3-wisemen-turbo-cache-shared
-        env:
-          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
-          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          S3_REGION: nl-ams
-      - name: Show Turbo cache server logs on failure
-        if: always() && steps.turbo-cache.outcome == 'failure'
-        run: |
-          LOG_DIR="$(node -e 'console.log(require("path").resolve(require("os").tmpdir(), "turborepo-remote-cache-gh-action"))')"
-          echo "Log dir: $LOG_DIR"
-          if [ -d "$LOG_DIR" ]; then
-            for f in "$LOG_DIR"/*.log; do
-              echo "===== $f ====="
-              cat "$f" || true
-            done
-          else
-            echo "No log dir found at $LOG_DIR"
-          fi
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ github.job }}-
+            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -122,30 +90,14 @@ jobs:
     outputs:
       playwright-configured: ${{ steps.prep-playwright.outputs.playwright-configured }}
     steps:
-      - name: TurboRepo Remote Cache Server
-        id: turbo-cache
-        uses: trappar/turborepo-remote-cache-gh-action@main
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
         with:
-          storage-provider: s3
-          storage-path: s3-wisemen-turbo-cache-shared
-        env:
-          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
-          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          S3_REGION: nl-ams
-      - name: Show Turbo cache server logs on failure
-        if: always() && steps.turbo-cache.outcome == 'failure'
-        run: |
-          LOG_DIR="$(node -e 'console.log(require("path").resolve(require("os").tmpdir(), "turborepo-remote-cache-gh-action"))')"
-          echo "Log dir: $LOG_DIR"
-          if [ -d "$LOG_DIR" ]; then
-            for f in "$LOG_DIR"/*.log; do
-              echo "===== $f ====="
-              cat "$f" || true
-            done
-          else
-            echo "No log dir found at $LOG_DIR"
-          fi
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ github.job }}-
+            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -186,30 +138,14 @@ jobs:
       options: --user 1001
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
-      - name: TurboRepo Remote Cache Server
-        id: turbo-cache
-        uses: trappar/turborepo-remote-cache-gh-action@main
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
         with:
-          storage-provider: s3
-          storage-path: s3-wisemen-turbo-cache-shared
-        env:
-          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
-          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          S3_REGION: nl-ams
-      - name: Show Turbo cache server logs on failure
-        if: always() && steps.turbo-cache.outcome == 'failure'
-        run: |
-          LOG_DIR="$(node -e 'console.log(require("path").resolve(require("os").tmpdir(), "turborepo-remote-cache-gh-action"))')"
-          echo "Log dir: $LOG_DIR"
-          if [ -d "$LOG_DIR" ]; then
-            for f in "$LOG_DIR"/*.log; do
-              echo "===== $f ====="
-              cat "$f" || true
-            done
-          else
-            echo "No log dir found at $LOG_DIR"
-          fi
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ github.job }}-
+            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -253,30 +189,14 @@ jobs:
       options: --user 1001
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
-      - name: TurboRepo Remote Cache Server
-        id: turbo-cache
-        uses: trappar/turborepo-remote-cache-gh-action@main
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
         with:
-          storage-provider: s3
-          storage-path: s3-wisemen-turbo-cache-shared
-        env:
-          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
-          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY_ID }}
-          S3_SECRET_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
-          S3_REGION: nl-ams
-      - name: Show Turbo cache server logs on failure
-        if: always() && steps.turbo-cache.outcome == 'failure'
-        run: |
-          LOG_DIR="$(node -e 'console.log(require("path").resolve(require("os").tmpdir(), "turborepo-remote-cache-gh-action"))')"
-          echo "Log dir: $LOG_DIR"
-          if [ -d "$LOG_DIR" ]; then
-            for f in "$LOG_DIR"/*.log; do
-              echo "===== $f ====="
-              cat "$f" || true
-            done
-          else
-            echo "No log dir found at $LOG_DIR"
-          fi
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ github.job }}-
+            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Download archive
