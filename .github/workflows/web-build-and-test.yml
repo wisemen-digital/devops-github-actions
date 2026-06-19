@@ -21,10 +21,14 @@ on:
         description: Image to use for Playwright testing (defaults to their prebuilt version)
         default: 'mcr.microsoft.com/playwright:v1.48.2'
         type: string
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+env:
+  TURBO_API: https://cache.turbo.internal.appwi.se
+  TURBO_TEAM: ci
+  TURBO_TOKEN: token1
 
 jobs:
   # First lint & typecheck
@@ -33,14 +37,6 @@ jobs:
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
-      - name: Cache turbo build setup
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ github.job }}-
-            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -59,14 +55,6 @@ jobs:
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
-      - name: Cache turbo build setup
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ github.job }}-
-            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -90,14 +78,6 @@ jobs:
     outputs:
       playwright-configured: ${{ steps.prep-playwright.outputs.playwright-configured }}
     steps:
-      - name: Cache turbo build setup
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ github.job }}-
-            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -138,14 +118,6 @@ jobs:
       options: --user 1001
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
-      - name: Cache turbo build setup
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ github.job }}-
-            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pnpm
@@ -189,14 +161,6 @@ jobs:
       options: --user 1001
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
-      - name: Cache turbo build setup
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ github.job }}-
-            ${{ runner.os }}-turbo-
       - name: Checkout
         uses: actions/checkout@v6
       - name: Download archive
