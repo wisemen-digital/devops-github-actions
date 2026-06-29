@@ -20,6 +20,10 @@ on:
         description: Node Version (such as 20.5)
         default: 'lts/*'
         type: string
+      turbo-cache-enabled:
+        description: Enable Turbo remote cache. Requires TURBO_TOKEN unless explicitly disabled
+        default: true
+        type: boolean
       test-timeout:
         description: Time (in minutes) after wich the test job will timeout
         default: 5
@@ -88,16 +92,11 @@ on:
     secrets:
       TURBO_TOKEN:
         description: Shared secret matching the Turbo remote cache server's TURBO_TOKEN
-        required: true
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
-env:
-  TURBO_API: https://cache.turbo.internal.appwi.se
-  TURBO_TEAM: ${{ github.event.repository.name }}
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
 jobs:
   # First check for leaks & generate workflow matrix
@@ -160,6 +159,27 @@ jobs:
           key: ${{ runner.os }}-eslint-${{ hashFiles('**/eslint.config.js', '**/eslint.config.ts', '.eslintrc.json') }}
           restore-keys: |
             ${{ runner.os }}-eslint
+      - name: Configure Turbo remote cache
+        shell: bash
+        env:
+          TURBO_CACHE_ENABLED: ${{ inputs.turbo-cache-enabled }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+        run: |
+          if [ "$TURBO_CACHE_ENABLED" != "true" ]; then
+            echo "Turbo remote cache disabled by input."
+            exit 0
+          fi
+
+          if [ -z "$TURBO_TOKEN" ]; then
+            echo "::error::TURBO_TOKEN must be provided when turbo-cache-enabled is true."
+            exit 1
+          fi
+
+          {
+            echo "TURBO_API=https://cache.turbo.internal.appwi.se"
+            echo "TURBO_TEAM=${{ github.event.repository.name }}"
+            echo "TURBO_TOKEN=$TURBO_TOKEN"
+          } >> "$GITHUB_ENV"
       - name: Lint
         run: |
           CACHE_ARGS="--cache --cache-location .eslintcache --cache-strategy content"
@@ -190,6 +210,28 @@ jobs:
         uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
         with:
           node-version: ${{ inputs.node-version }}
+      - name: Configure Turbo remote cache
+        if: ${{ matrix.app.skip != true }}
+        shell: bash
+        env:
+          TURBO_CACHE_ENABLED: ${{ inputs.turbo-cache-enabled }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+        run: |
+          if [ "$TURBO_CACHE_ENABLED" != "true" ]; then
+            echo "Turbo remote cache disabled by input."
+            exit 0
+          fi
+
+          if [ -z "$TURBO_TOKEN" ]; then
+            echo "::error::TURBO_TOKEN must be provided when turbo-cache-enabled is true."
+            exit 1
+          fi
+
+          {
+            echo "TURBO_API=https://cache.turbo.internal.appwi.se"
+            echo "TURBO_TEAM=${{ github.event.repository.name }}"
+            echo "TURBO_TOKEN=$TURBO_TOKEN"
+          } >> "$GITHUB_ENV"
       - name: Run build
         if: ${{ matrix.app.skip != true }}
         run: |
