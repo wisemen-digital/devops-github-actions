@@ -49,6 +49,37 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+      # Build (front-end)
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        if: hashFiles('pnpm-lock.yaml) != ''
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        if: hashFiles('pnpm-lock.yaml) != ''
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+        if: hashFiles('pnpm-lock.yaml) != ''
+      - name: Compile Front-End
+        if: hashFiles('pnpm-lock.yaml) != ''
+        run: |
+          if [[ -f "vite.config.js" || -f "vite.config.ts" ]]; then
+            NODE_ENV=$ENV vite build --mode $ENV
+          elif [[ -f "webpack.mix.js" ]]; then
+            if [[ "$ENV" == "production" ]]; then
+              NODE_ENV=$ENV mix --production
+            else
+              NODE_ENV=$ENV mix
+            fi
+          else
+            echo '::error title=INVALID FRONT-END CONFIG::No supported build ' \
+              'configuration found (vite.config.js/ts or webpack.mix.js)'
+            exit 1
+          fi
+        env:
+          ENV: ${{ inputs.environment }}
       # Optimize
       - name: Optimize composer autoloader
         run: composer dump-autoload --optimize --classmap-authoritative
