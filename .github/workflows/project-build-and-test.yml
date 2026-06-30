@@ -106,7 +106,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Scan for leaks
@@ -153,7 +153,7 @@ jobs:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
       - name: Restore ESLint cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: apps/*/.eslintcache
           key: ${{ runner.os }}-eslint-${{ hashFiles('**/eslint.config.js', '**/eslint.config.ts', '.eslintrc.json') }}
