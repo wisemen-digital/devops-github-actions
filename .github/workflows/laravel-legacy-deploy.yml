@@ -35,14 +35,14 @@ jobs:
     container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Prepare .env (needed for some old projects)
         run: cp -f .env.example .env
       # Dependencies
       - name: Get Composer Cache Directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -88,10 +88,11 @@ jobs:
       - name: Extract archive
         run: tar xzf dist.tar.gz && rm dist.tar.gz
       # Pre-deploy: turn server off
-      # Note: run using specific version of PHP, because composer does a platform
-      #   check, and the PHP version may mismatch here
+      # Note: this will run with the old PHP version as configured on server
+      #   (with the old `.php-version` file). That's fine, as we would otherwise
+      #   get composer issues with PHP version mismatches.
       - name: Enable maintenance mode
-        run: ssh ${{ vars.DEPLOY_URL }} "php${{ inputs.php-version }} www/htdocs/artisan down"
+        run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan down"
       # Deploy
       - name: Upload files
         run: |
@@ -107,6 +108,9 @@ jobs:
             --exclude=storage/framework/sessions \
             --exclude=storage/framework/cache \
             --exclude='storage/oauth-*.key'
+      # Note: from this point on the new `.php-version` file is on server, and
+      #   it'll automatically use the new version, ensuring `artisan` commands
+      #   succeed.
       - name: Tweak folders
         run: |
           ssh ${{ vars.DEPLOY_URL }} << EOF
