@@ -153,7 +153,13 @@ jobs:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
       - name: Type check
-        run: pnpm type-check
+        run: |
+          if test -f 'turbo.json'; then
+            pnpm type-check \
+              ${{ steps.setup.outputs.pnpm-filter-args }}
+          else
+            pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} type-check
+          fi
   lint:
     name: Lint Application
     needs: [generate-matrix]
