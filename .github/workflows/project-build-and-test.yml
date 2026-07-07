@@ -242,7 +242,7 @@ jobs:
   # Finally publish test report (summary)
   publish-test-report:
     name: Publish Test Application
-    needs: [check-leaks, lint, test]
+    needs: [check-leaks, lint, test, type-check]
     if: always() && needs.test.result != 'skipped'
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     steps:
