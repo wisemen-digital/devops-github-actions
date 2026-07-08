@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Lint
         uses: aglipanci/laravel-pint-action@latest
         with:
@@ -43,20 +43,45 @@ jobs:
     container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Prepare .env (needed for some old projects)
         run: cp -f .env.example .env
       # Dependencies
       - name: Get Composer Cache Directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+      # Build (front-end)
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        if: hashFiles('pnpm-lock.yaml') != ''
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        if: hashFiles('pnpm-lock.yaml') != ''
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+        if: hashFiles('pnpm-lock.yaml') != ''
+      - name: Compile Front-End
+        if: hashFiles('pnpm-lock.yaml') != ''
+        run: |
+          if [[ -f "vite.config.js" || -f "vite.config.ts" ]]; then
+            NODE_ENV=development vite build --mode development
+          elif [[ -f "webpack.mix.js" ]]; then
+            NODE_ENV=development mix
+          else
+            echo '::error title=INVALID FRONT-END CONFIG::No supported build ' \
+              'configuration found (vite.config.js/ts or webpack.mix.js)'
+            exit 1
+          fi
       # Optimize
       - name: Optimize composer autoloader
         run: composer dump-autoload --optimize --classmap-authoritative

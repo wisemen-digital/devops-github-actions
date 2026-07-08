@@ -88,7 +88,7 @@ runs:
     # Vendor: Azure
     - name: Save Azure kubeconfig
       if: ${{ inputs.vendor == 'azure' }}
-      uses: azure/aks-set-context@v4
+      uses: azure/aks-set-context@v5
       with:
         resource-group: ${{ inputs.azure-resource-group}}
         cluster-name: ${{ inputs.cluster-id }}
