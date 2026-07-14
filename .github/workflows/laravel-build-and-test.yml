@@ -61,22 +61,18 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         if: hashFiles('pnpm-lock.yaml') != ''
-      - name: Install Node.js
-        uses: actions/setup-node@v6
-        if: hashFiles('pnpm-lock.yaml') != ''
         with:
-          node-version: 'lts/*'
-          cache: 'pnpm'
+          cache: true
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: pnpm install --frozen-lockfile --prefer-offline --dev
         if: hashFiles('pnpm-lock.yaml') != ''
       - name: Compile Front-End
         if: hashFiles('pnpm-lock.yaml') != ''
         run: |
           if [[ -f "vite.config.js" || -f "vite.config.ts" ]]; then
-            NODE_ENV=development vite build --mode development
+            NODE_ENV=development pnpm exec vite build --mode development
           elif [[ -f "webpack.mix.js" ]]; then
-            NODE_ENV=development mix
+            NODE_ENV=development pnpm exec mix
           else
             echo '::error title=INVALID FRONT-END CONFIG::No supported build ' \
               'configuration found (vite.config.js/ts or webpack.mix.js)'
