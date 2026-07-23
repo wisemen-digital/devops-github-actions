@@ -26,6 +26,7 @@ A redeploy on an existing Serverless Container. It does not create or update the
 | `environment-map` | Custom environment mapping (JSON object) | Yes |
 | `image` | Image name. Defaults to repository name | No |
 | `image-variants` | List of variants to build (folders in monorepo, separated by commas) | No |
+| `secondary-container-registry` | Secondary registry namespace to mirror production images to after rollout | No |
 
 ### Variables & Secrets
 
@@ -86,8 +87,18 @@ Only provide the following for your chosen vendor.
 | `SCALEWAY_PROJECT_ID` | Scaleway project ID (i.e. environment) | Variable | Yes |
 | `SCALEWAY_REGION` | Scaleway region identifier (such as `fr-par`) | Variable | Yes |
 | `SCALEWAY_SECRET_KEY` | Scaleway API key secret | Secret | Yes |
+| `SCALEWAY_SECONDARY_SECRET_KEY` | Scaleway API key secret for the optional secondary production registry | Secret | Required when `secondary-container-registry` is set for production |
 
 </details>
+
+### Secondary production registry
+
+When `environment-target` resolves to `production` and
+`secondary-container-registry` is set, the workflow mirrors each promoted image
+to that registry after the normal rollout. The mirror uses
+`SCALEWAY_SECONDARY_SECRET_KEY` with Scaleway's `nologin` Docker username.
+For example, Ticketgrid mirrors production images to
+`rg.nl-ams.scw.cloud/ticketgrid-registry`.
 
 ## Outputs
 

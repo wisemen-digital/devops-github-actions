@@ -48,6 +48,10 @@ on:
         description: List of variants to roll out (folders in monorepo, separated by commas)
         type: string
         required: false
+      secondary-container-registry:
+        description: Secondary registry namespace to mirror production images to after rollout
+        type: string
+        required: false
     secrets:
       # Vendor: Azure
       AZURE_CLIENT_ID:
@@ -78,6 +82,9 @@ on:
         required: false
       SCALEWAY_SECRET_KEY:
         description: Scaleway API key secret
+        required: false
+      SCALEWAY_SECONDARY_SECRET_KEY:
+        description: Scaleway API key secret for the secondary container registry
         required: false
 
 jobs:
@@ -233,3 +240,26 @@ jobs:
               echo "- Container: \`${{ vars.SERVERLESS_CONTAINER_ID }}\`"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Mirror production image to secondary registry
+        if: ${{ needs.validate-and-generate.outputs.target == 'production' && inputs.secondary-container-registry != '' }}
+        shell: bash
+        env:
+          primary_image_ref: ${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}
+          secondary_registry: ${{ inputs.secondary-container-registry }}
+          secondary_secret_key: ${{ secrets.SCALEWAY_SECONDARY_SECRET_KEY }}
+          target_tag: ${{ needs.validate-and-generate.outputs.target }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${secondary_secret_key}" ]]; then
+            echo "::error title=MISSING SECONDARY REGISTRY CREDENTIALS::SCALEWAY_SECONDARY_SECRET_KEY is required when mirroring production images."
+            exit 1
+          fi
+
+          secondary_registry_host="${secondary_registry%%/*}"
+          printf '%s' "${secondary_secret_key}" | docker login "${secondary_registry_host}" --username nologin --password-stdin
+          trap 'docker logout "${secondary_registry_host}" >/dev/null 2>&1 || true' EXIT
+
+          docker pull "${primary_image_ref}:${target_tag}"
+          docker tag "${primary_image_ref}:${target_tag}" "${secondary_registry}/${{ steps.setup.outputs.image }}:${target_tag}"
+          docker push "${secondary_registry}/${{ steps.setup.outputs.image }}:${target_tag}"
