@@ -125,7 +125,7 @@ jobs:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-version: ${{ inputs.node-version }}
       - name: Run Danger
-        uses: wisemen-digital/wisemen-danger-rules/.github/actions/run-danger@v1
+        uses: wisemen-digital/wisemen-core/packages/dev-ops/danger/.github/actions/run-danger@feature/danger
         with:
           github-access-token: ${{ github.token }}
   generate-matrix:
