@@ -163,6 +163,7 @@ jobs:
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
           rollout-deployments: ${{ vars.K8S_DEPLOYMENTS }}
           rollout-labels: ${{ steps.setup.outputs.k8s-labels }}
+          rollout-image: ${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}
           rollout-namespace: ${{ vars.K8S_NAMESPACE }}
           # Vendor: azure
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
