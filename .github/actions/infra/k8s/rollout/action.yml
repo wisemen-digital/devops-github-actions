@@ -14,6 +14,9 @@ inputs:
   rollout-labels:
     description: List of labels to rollout (comma separated)
     required: false
+  rollout-image:
+    description: Image reference without tag; restarts deployments running this image
+    required: false
   rollout-namespace:
     description: Rollout namespace filter
     required: true
@@ -79,6 +82,7 @@ runs:
       env:
         DEPLOYMENTS: ${{ inputs.rollout-deployments }}
         LABELS: ${{ inputs.rollout-labels }}
+        IMAGE: ${{ inputs.rollout-image }}
       run: |
         # Restart multiple deployments
         if [ -n "$DEPLOYMENTS" ]; then
@@ -93,6 +97,14 @@ runs:
           kubectl rollout restart deployment \
             --selector="$LABELS" \
             --namespace="${{ inputs.rollout-namespace }}"
+
+        # Restart deployments running the image
+        elif [ -n "$IMAGE" ]; then
+          kubectl get deployment \
+            --namespace="${{ inputs.rollout-namespace }}" -o json \
+            | jq -r --arg img "$IMAGE" '.items[] | select(any(.spec.template.spec.containers[]; .image | startswith($img + ":"))) | .metadata.name' \
+            | xargs -r kubectl rollout restart deployment \
+              --namespace="${{ inputs.rollout-namespace }}"
 
         # Restart everything
         else
