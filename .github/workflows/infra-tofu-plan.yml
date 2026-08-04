@@ -45,6 +45,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     env:
+      TF_STATE_BUCKET: ${{ format('{0}-tf-state-1a2b3', github.event.repository.name) }}
       AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
       AWS_DEFAULT_REGION: ${{ vars.SCALEWAY_REGION }}
