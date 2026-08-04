@@ -91,13 +91,10 @@ runs:
             ;;
         esac
 
-        # Transform K8S labels
-        if [ -z "${{ inputs.variant-path }}" ]; then
-          echo "k8s_labels=${{ inputs.k8s-labels }}" >> "$GITHUB_OUTPUT"
-        else
-          labels=(${{ inputs.k8s-labels }} variant=${{ inputs.variant-path }})
-          echo "k8s_labels=$(IFS=,;echo "${labels[*]}")" >> "$GITHUB_OUTPUT"
-        fi
+        # K8S rollout labels: pass through K8S_LABELS as-is.
+        # We no longer synthesize a `variant=<path>` selector — the rollout action now
+        # restarts by image (see infra/k8s/rollout), which needs no per-deployment label.
+        echo "k8s_labels=${{ inputs.k8s-labels }}" >> "$GITHUB_OUTPUT"
     # Prep. docker environment
     - name: Checkout
       if: ${{ inputs.prepare-for-building == 'true' }}

@@ -2,7 +2,11 @@
 
 ## Description
 
-This workflow will grab the existing docker image & tag, and re-deploy it to the given environment (kubernetes rollout). It essentially just re-tags an image and rolls it out. If kubernetes labels are provided, the list of deployments will **not** be used.
+This workflow will grab the existing docker image & tag, and re-deploy it to the given environment (kubernetes rollout). It essentially just re-tags an image and rolls it out.
+
+**Rollout target selection** (first match wins): `K8S_DEPLOYMENTS` (explicit names) → `K8S_LABELS`
+(label selector) → **default:** restart every deployment running the built image (no config needed,
+no rollout label required on deployments).
 
 If you don't provide a source environment to deploy "from", it will calculate it based on the "target" environment. This will be done based on the usual order of `development -> test -> staging -> production`.
 

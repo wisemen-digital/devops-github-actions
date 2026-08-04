@@ -2,7 +2,15 @@
 
 ## Description
 
-This workflow will build the docker image and deploy it to the given environment (kubernetes rollout). If kubernetes labels are provided, the list of deployments will **not** be used.
+This workflow will build the docker image and deploy it to the given environment (kubernetes rollout).
+
+**Rollout target selection** (first match wins):
+1. `K8S_DEPLOYMENTS` — explicit deployment names, or
+2. `K8S_LABELS` — a label selector, or
+3. **default:** restart every deployment whose pods run the just-built image (no config needed).
+
+`K8S_DEPLOYMENTS` / `K8S_LABELS` are now optional overrides; if neither is set, the rollout restarts
+by image — so deployments no longer need a `variant=` (or any) rollout label.
 
 ## Inputs
 

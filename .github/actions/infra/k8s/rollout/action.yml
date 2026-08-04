@@ -9,10 +9,15 @@ inputs:
     description: Target cluster ID
     required: true
   rollout-deployments:
-    description: List of deployments to rollout (comma separated)
+    description: Explicit list of deployments to rollout (comma separated). Overrides image/labels.
     required: false
   rollout-labels:
-    description: List of labels to rollout (comma separated)
+    description: Label selector to rollout (comma separated). Overrides image matching.
+    required: false
+  rollout-image:
+    description: >
+      Image reference (without tag) to match. Restarts every deployment whose pods run this image.
+      Used when neither rollout-deployments nor rollout-labels is set (the default mechanism).
     required: false
   rollout-namespace:
     description: Rollout namespace filter
@@ -79,23 +84,29 @@ runs:
       env:
         DEPLOYMENTS: ${{ inputs.rollout-deployments }}
         LABELS: ${{ inputs.rollout-labels }}
+        IMAGE: ${{ inputs.rollout-image }}
+        NS: ${{ inputs.rollout-namespace }}
       run: |
-        # Restart multiple deployments
+        # Restart explicit deployments (override)
         if [ -n "$DEPLOYMENTS" ]; then
           for deployment in ${DEPLOYMENTS//,/ }; do
-            kubectl rollout restart deployment \
-              "$deployment" \
-              --namespace="${{ inputs.rollout-namespace }}"
+            kubectl rollout restart deployment "$deployment" --namespace="$NS"
           done
 
-        # Restart multiple labels
+        # Restart by label selector (override)
         elif [ -n "$LABELS" ]; then
-          kubectl rollout restart deployment \
-            --selector="$LABELS" \
-            --namespace="${{ inputs.rollout-namespace }}"
+          kubectl rollout restart deployment --selector="$LABELS" --namespace="$NS"
 
-        # Restart everything
+        # Restart every deployment running the built image (default)
+        elif [ -n "$IMAGE" ]; then
+          kubectl get deployment --namespace="$NS" -o json \
+            | jq -r --arg img "$IMAGE" \
+                '.items[]
+                 | select(any(.spec.template.spec.containers[]; .image | startswith($img + ":")))
+                 | .metadata.name' \
+            | xargs -r kubectl rollout restart deployment --namespace="$NS"
+
+        # Restart everything (fallback)
         else
-          kubectl rollout restart deployment \
-            --namespace="${{ inputs.rollout-namespace }}"
+          kubectl rollout restart deployment --namespace="$NS"
         fi
