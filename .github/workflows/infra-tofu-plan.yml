@@ -1,0 +1,157 @@
+---
+name: Plan Terraform (Terragrunt)
+
+#
+# PR check: plan every stack and comment ONLY what changed (per stack).
+#
+
+on:
+  workflow_call:
+    # Depends on the following vars:
+    # - RUNNER_DEFAULT
+    # - SCALEWAY_REGION, SCALEWAY_ORGANIZATION_ID, SCALEWAY_PROJECT_ID, SCALEWAY_ZONE
+    # - HOOP_API_URL
+    # And the following secrets (pass with `secrets: inherit`):
+    # - K8S_MODULES_SECRET, SCALEWAY_ACCESS_KEY, SCALEWAY_SECRET_KEY,
+    #   HOOP_API_KEY, GH_TERRAFORM_PRIVATE_KEY, GH_KUBECONFIGS_PRIVATE_KEY
+    inputs:
+      working-dir:
+        description: Terragrunt working directory
+        type: string
+        required: false
+        default: terraform
+    secrets:
+      K8S_MODULES_SECRET:
+        description: Token with read access to the Terraform module repositories
+        required: true
+      SCALEWAY_ACCESS_KEY:
+        required: false
+      SCALEWAY_SECRET_KEY:
+        required: false
+      HOOP_API_KEY:
+        required: false
+      GH_TERRAFORM_PRIVATE_KEY:
+        required: false
+      GH_KUBECONFIGS_PRIVATE_KEY:
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: Plan (all stacks)
+    if: github.event_name == 'pull_request'
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.SCALEWAY_REGION }}
+      SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+      SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      SCW_DEFAULT_ORGANIZATION_ID: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+      SCW_DEFAULT_PROJECT_ID: ${{ vars.SCALEWAY_PROJECT_ID }}
+      SCW_DEFAULT_REGION: ${{ vars.SCALEWAY_REGION }}
+      SCW_DEFAULT_ZONE: ${{ vars.SCALEWAY_ZONE }}
+      TF_VAR_hoop_api_key: ${{ secrets.HOOP_API_KEY }}
+      TF_VAR_hoop_api_url: ${{ vars.HOOP_API_URL }}
+      TF_VAR_github_app_pem: ${{ secrets.GH_TERRAFORM_PRIVATE_KEY }}
+      TF_VAR_kubeconfig_github_app_pem: ${{ secrets.GH_KUBECONFIGS_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: ${{ inputs.working-dir }}
+
+      - uses: wisemen-digital/devops-github-actions/.github/actions/infra/tofu/setup@v2
+        with:
+          github-access-token: ${{ secrets.K8S_MODULES_SECRET }}
+
+      - name: Plan and build diff comment
+        id: plan
+        shell: bash
+        run: |
+          set +e
+          WD="${{ inputs.working-dir }}"
+
+          # Plan every stack (dependency-ordered) and write a plan file per unit.
+          terragrunt run-all plan \
+            --terragrunt-working-dir="$WD" \
+            --terragrunt-non-interactive \
+            -no-color -input=false -out=tfplan.bin > plan-run.log 2>&1
+          EXITCODE=$?
+          echo "exitcode=$EXITCODE" >> "$GITHUB_OUTPUT"
+          echo "----- terragrunt run-all plan -----"
+          cat plan-run.log
+
+          BODY="$GITHUB_WORKSPACE/tofu-plan-comment.md"
+          TOTAL_MAX=60000
+          PER_MAX=15000
+          {
+            echo "## Terragrunt plan — all stacks"
+            echo ""
+            echo "Triggered by @${{ github.actor }} (\`${{ github.event.pull_request.head.sha }}\`)"
+            echo ""
+            if [ "$EXITCODE" -ne 0 ]; then
+              echo "> ⚠️ Plan finished with errors (exit $EXITCODE). See the workflow logs."
+              echo ""
+            fi
+          } > "$BODY"
+
+          changed=0
+          unchanged=""
+          errored=""
+          # Render each stack's plan file with `tofu show` (clean output — no
+          # backend-init / refresh noise), then keep only stacks that changed.
+          while IFS= read -r pf; do
+            unit="${pf%%/.terragrunt-cache/*}"
+            rel="${unit#"$WD"/}"
+            wd="$(dirname "$pf")"
+            out="$(tofu -chdir="$wd" show -no-color tfplan.bin 2>/dev/null)"
+            if [ -z "$out" ]; then errored="$errored $rel"; continue; fi
+            if printf '%s' "$out" | grep -q 'No changes'; then unchanged="$unchanged $rel"; continue; fi
+
+            planline="$(printf '%s' "$out" | grep -Eo 'Plan: [0-9]+ to add, [0-9]+ to change, [0-9]+ to destroy' | tail -1)"
+            a="$(printf '%s' "$planline" | grep -oE '[0-9]+ to add' | grep -oE '[0-9]+')"; a="${a:-0}"
+            c="$(printf '%s' "$planline" | grep -oE '[0-9]+ to change' | grep -oE '[0-9]+')"; c="${c:-0}"
+            d="$(printf '%s' "$planline" | grep -oE '[0-9]+ to destroy' | grep -oE '[0-9]+')"; d="${d:-0}"
+
+            # Hoist +/-/~ markers to column 0 so GitHub colors the diff block.
+            diff="$(printf '%s' "$out" | sed -E 's/^([[:space:]]*)([-+~])/\2\1/')"
+            if [ "${#diff}" -gt "$PER_MAX" ]; then
+              diff="$(printf '%s' "$diff" | head -c "$PER_MAX")"$'\n'"… stack diff truncated — see the workflow logs …"
+            fi
+
+            {
+              echo "**$rel** — +$a ~$c -$d"
+              echo "<details><summary>diff</summary>"
+              echo ""
+              echo '```diff'
+              printf '%s\n' "$diff"
+              echo '```'
+              echo "</details>"
+              echo ""
+            } >> "$BODY"
+            changed=$((changed + 1))
+          done < <(find "$WD" -path '*/.terragrunt-cache/*' -name tfplan.bin | sort)
+
+          [ "$changed" -eq 0 ] && echo "_No stacks have changes._" >> "$BODY"
+          [ -n "$unchanged" ] && { echo "" >> "$BODY"; echo "_Unchanged:$unchanged_" >> "$BODY"; }
+          [ -n "$errored" ] && { echo "" >> "$BODY"; echo "_⚠️ Could not render:$errored_" >> "$BODY"; }
+
+          if [ "$(wc -c < "$BODY")" -gt "$TOTAL_MAX" ]; then
+            head -c "$TOTAL_MAX" "$BODY" > "$BODY.tmp"
+            printf '\n\n… comment truncated — see the workflow logs for the full plan.\n' >> "$BODY.tmp"
+            mv "$BODY.tmp" "$BODY"
+          fi
+
+      - name: Comment plan on PR
+        if: always()
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: tofu-plan-comment.md
+          comment-tag: tofu-plan
+
+      - name: Fail if plan errored
+        if: steps.plan.outputs.exitcode != '0'
+        run: exit 1

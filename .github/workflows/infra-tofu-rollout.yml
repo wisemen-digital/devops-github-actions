@@ -1,0 +1,98 @@
+---
+name: Rollout Terraform (Terragrunt apply)
+
+#
+# Ensure the state bucket exists, then apply every stack in dependency order.
+#
+
+on:
+  workflow_call:
+    # Depends on the following vars:
+    # - RUNNER_INFRA
+    # - SCALEWAY_REGION, SCALEWAY_ORGANIZATION_ID, SCALEWAY_PROJECT_ID, SCALEWAY_ZONE
+    # - HOOP_API_URL
+    # Secrets (pass with `secrets: inherit`):
+    # - K8S_MODULES_SECRET, SCALEWAY_ACCESS_KEY, SCALEWAY_SECRET_KEY,
+    #   HOOP_API_KEY, GH_TERRAFORM_PRIVATE_KEY, GH_KUBECONFIGS_PRIVATE_KEY
+    inputs:
+      working-dir:
+        description: Terragrunt working directory
+        type: string
+        required: false
+        default: terraform
+      state-bucket:
+        description: Name of the S3 state bucket (defaults to <repo>-tf-state-1a2b3)
+        type: string
+        required: false
+        default: ''
+    secrets:
+      K8S_MODULES_SECRET:
+        description: Token with read access to the Terraform module repositories
+        required: true
+      SCALEWAY_ACCESS_KEY:
+        required: false
+      SCALEWAY_SECRET_KEY:
+        required: false
+      HOOP_API_KEY:
+        required: false
+      GH_TERRAFORM_PRIVATE_KEY:
+        required: false
+      GH_KUBECONFIGS_PRIVATE_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  TF_STATE_BUCKET: ${{ inputs.state-bucket != '' && inputs.state-bucket || format('{0}-tf-state-1a2b3', github.event.repository.name) }}
+
+jobs:
+  bootstrap:
+    name: Ensure state bucket
+    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
+    steps:
+      - name: Set up s3cmd
+        uses: s3-actions/s3cmd@main
+        with:
+          provider: scaleway
+          region: ${{ vars.SCALEWAY_REGION }}
+          access_key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          secret_key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Create state bucket if missing
+        run: s3cmd mb "s3://${TF_STATE_BUCKET}" || true
+
+  apply:
+    name: Apply (all stacks)
+    needs: bootstrap
+    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.SCALEWAY_REGION }}
+      SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+      SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      SCW_DEFAULT_ORGANIZATION_ID: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+      SCW_DEFAULT_PROJECT_ID: ${{ vars.SCALEWAY_PROJECT_ID }}
+      SCW_DEFAULT_REGION: ${{ vars.SCALEWAY_REGION }}
+      SCW_DEFAULT_ZONE: ${{ vars.SCALEWAY_ZONE }}
+      TF_VAR_hoop_api_key: ${{ secrets.HOOP_API_KEY }}
+      TF_VAR_hoop_api_url: ${{ vars.HOOP_API_URL }}
+      TF_VAR_github_app_pem: ${{ secrets.GH_TERRAFORM_PRIVATE_KEY }}
+      TF_VAR_kubeconfig_github_app_pem: ${{ secrets.GH_KUBECONFIGS_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: ${{ inputs.working-dir }}
+
+      - uses: wisemen-digital/devops-github-actions/.github/actions/infra/tofu/setup@v2
+        with:
+          github-access-token: ${{ secrets.K8S_MODULES_SECRET }}
+
+      # `run-all` walks the dependency graph:
+      #   scw/infras → scw/environments/* → hoop + github
+      - name: Terragrunt Apply
+        run: |
+          terragrunt run-all apply \
+            --terragrunt-working-dir="${{ inputs.working-dir }}" \
+            --terragrunt-non-interactive \
+            -auto-approve

@@ -1,0 +1,86 @@
+---
+name: Destroy Terraform (Terragrunt destroy)
+
+#
+# Guarded teardown: requires an explicit "destroy" confirmation string.
+#
+
+on:
+  workflow_call:
+    # Depends on the same vars/secrets as infra-tofu-rollout.yml.
+    inputs:
+      confirm:
+        description: Must equal "destroy" or the run fails
+        type: string
+        required: true
+      working-dir:
+        description: Terragrunt working directory
+        type: string
+        required: false
+        default: terraform
+    secrets:
+      K8S_MODULES_SECRET:
+        description: Token with read access to the Terraform module repositories
+        required: true
+      SCALEWAY_ACCESS_KEY:
+        required: false
+      SCALEWAY_SECRET_KEY:
+        required: false
+      HOOP_API_KEY:
+        required: false
+      GH_TERRAFORM_PRIVATE_KEY:
+        required: false
+      GH_KUBECONFIGS_PRIVATE_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Confirm destroy
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    steps:
+      - name: Check confirmation input
+        run: |
+          if [ "${{ inputs.confirm }}" != "destroy" ]; then
+            echo "::error::Confirmation string was '${{ inputs.confirm }}', expected 'destroy'."
+            exit 1
+          fi
+          echo "Confirmed by ${{ github.actor }}"
+
+  destroy:
+    name: Destroy (all stacks)
+    needs: guard
+    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.SCALEWAY_REGION }}
+      SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+      SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      SCW_DEFAULT_ORGANIZATION_ID: ${{ vars.SCALEWAY_ORGANIZATION_ID }}
+      SCW_DEFAULT_PROJECT_ID: ${{ vars.SCALEWAY_PROJECT_ID }}
+      SCW_DEFAULT_REGION: ${{ vars.SCALEWAY_REGION }}
+      SCW_DEFAULT_ZONE: ${{ vars.SCALEWAY_ZONE }}
+      TF_VAR_hoop_api_key: ${{ secrets.HOOP_API_KEY }}
+      TF_VAR_hoop_api_url: ${{ vars.HOOP_API_URL }}
+      TF_VAR_github_app_pem: ${{ secrets.GH_TERRAFORM_PRIVATE_KEY }}
+      TF_VAR_kubeconfig_github_app_pem: ${{ secrets.GH_KUBECONFIGS_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: ${{ inputs.working-dir }}
+
+      - uses: wisemen-digital/devops-github-actions/.github/actions/infra/tofu/setup@v2
+        with:
+          github-access-token: ${{ secrets.K8S_MODULES_SECRET }}
+
+      # `run-all destroy` walks the dependency graph in REVERSE:
+      #   hoop + github → scw/environments/* → scw/infras
+      - name: Terragrunt Destroy
+        run: |
+          terragrunt run-all destroy \
+            --terragrunt-working-dir="${{ inputs.working-dir }}" \
+            --terragrunt-non-interactive \
+            -auto-approve
