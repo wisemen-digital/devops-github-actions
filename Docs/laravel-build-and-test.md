@@ -17,13 +17,15 @@ For the test job, it will set up:
 
 Note that the tests are run using the `pest` tool.
 
-## Inputs
+## Inputs & Secrets
 
-| Input | Description |
-| ----- | ----------- |
-| `php-version` | PHP version to use, defaults to `8.3` |
-| `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
-| `test-mysql-image` | MySQL image to use for the tests, defaults to MySQL 8 |
+| Input | Description | Type | Required |
+| ----- | ----------- | ---- | -------- |
+| `php-version` | PHP version to use, defaults to `8.3` | Input | Yes |
+| `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) | Input | No |
+| `test-mysql-image` | MySQL image to use for the tests, defaults to MySQL 8 | Input | No |
+| `COMPOSER_AUTH` | JSON for access to private Composer packages | Secret | No |
+| `EXTRA_NPMRC` | Snippet to place in `.npmrc` to access private packages | Secret | No |
 
 ## Outputs
 
