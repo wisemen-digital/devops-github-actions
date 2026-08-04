@@ -67,7 +67,7 @@ runs:
         esac
 
     # Vendor common setup
-    - uses: wisemen-digital/devops-github-actions/.github/actions/infra/common/setup@v1
+    - uses: wisemen-digital/devops-github-actions/.github/actions/infra/common/setup@v2
       with:
         vendor: ${{ inputs.vendor }}
         # Vendor: azure

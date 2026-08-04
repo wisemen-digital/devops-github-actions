@@ -2,7 +2,13 @@
 
 ## Description
 
-This workflow builds a Docker image, pushes it with the environment tag, and triggers either a cluster rollout or a serverless redeploy.
+This workflow will build the docker image and deploy it to the right environment.
+
+Note that the environment will be calculated based on the git context, applying our deployment "rules":
+
+- Push on `main` branch: deploy to `development`.
+- Push on latest `release/x.x.x` branch: deploy to `staging`.
+- Tag `x.x.x` (only latest): deploy to `production`.
 
 ### K8S Cluster Rollout
 

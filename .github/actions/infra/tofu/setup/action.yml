@@ -1,0 +1,40 @@
+---
+name: Tofu Setup
+description: Install OpenTofu + Terragrunt and configure access to private Terraform modules
+inputs:
+  github-access-token:
+    description: Token with read access to the private Terraform module repositories
+    required: true
+  terragrunt-version:
+    description: Terragrunt version to install
+    required: false
+    default: v0.68.4
+
+runs:
+  using: composite
+  steps:
+    - uses: opentofu/setup-opentofu@v1
+
+    - name: Install Terragrunt
+      shell: bash
+      run: |
+        curl -sSL -o /usr/local/bin/terragrunt \
+          "https://github.com/gruntwork-io/terragrunt/releases/download/${{ inputs.terragrunt-version }}/terragrunt_linux_amd64"
+        chmod +x /usr/local/bin/terragrunt
+        terragrunt --version
+
+    - name: Ensure access to private module repositories
+      shell: bash
+      run: |
+        # Terragrunt fetches modules with go-getter, which does NOT read the global
+        # ~/.gitconfig. Inject the token->HTTPS rewrite via GIT_CONFIG_* env vars so
+        # every git subprocess honors it. Also pin tofu as the Terragrunt binary.
+        echo "TERRAGRUNT_TFPATH=tofu" >> "$GITHUB_ENV"
+        if [ -n "${{ inputs.github-access-token }}" ]; then
+          AUTH="x-access-token:${{ inputs.github-access-token }}"
+          {
+            echo "GIT_CONFIG_COUNT=1"
+            echo "GIT_CONFIG_KEY_0=url.https://${AUTH}@github.com/.insteadOf"
+            echo "GIT_CONFIG_VALUE_0=https://github.com/"
+          } >> "$GITHUB_ENV"
+        fi

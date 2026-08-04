@@ -1,0 +1,23 @@
+---
+name: Validate git & generate environment
+description: |
+  Validates that the git context matches our deployment rules, and generates
+  the target environment.
+outputs:
+  environment:
+    description: Target environment
+    value: ${{ steps.values.outputs.environment }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate git context & generate environment
+      id: values
+      shell: bash
+      run: |
+        RESULT_FILE=`mktemp`
+
+        "${{ github.action_path }}/scripts/check-git-and-generate-env.sh" \
+          "$RESULT_FILE"
+
+        echo "environment=`cat $RESULT_FILE`" >> "$GITHUB_OUTPUT"

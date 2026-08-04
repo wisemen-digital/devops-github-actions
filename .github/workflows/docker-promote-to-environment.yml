@@ -9,6 +9,7 @@ on:
   workflow_call:
     # Depends on the following vars
     # - CONTAINER_REGISTRY_ENDPOINT
+    # - ENVIRONMENT_TAG_MAP
     # - K8S_CLUSTER_ID
     # - K8S_DEPLOYMENTS
     # - K8S_LABELS
@@ -28,18 +29,10 @@ on:
         description: The vendor to communicate with (azure, digitalocean, scaleway)
         type: string
         required: true
-      environment-source:
-        description: Source environment to deploy FROM (defaults to previous environment)
-        type: string
-        required: false
       environment-target:
         description: Target environment to deploy TO
         type: string
         required: true
-      environment-map:
-        description: Environment map (JSON, fallback to default map)
-        type: string
-        required: false
       image:
         description: Image name (fallback to repository name)
         type: string
@@ -92,7 +85,7 @@ jobs:
     steps:
       - name: Validate & generate docker workflow inputs
         id: gen-matrix
-        uses: wisemen-digital/devops-github-actions/.github/actions/docker/validate-and-generate-inputs@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/validate-and-generate-inputs@v2
         with:
           vendor: ${{ inputs.vendor }}
           image-variants: ${{ inputs.image-variants }}
@@ -114,26 +107,20 @@ jobs:
           target=`echo ${{ inputs.environment-target }} | tr '[:upper:]' '[:lower:]'`
           echo "target=$target" >> "$GITHUB_OUTPUT"
 
-          if [ ! -z "${{ inputs.environment-source }}" ]; then
-            echo "source=${{ inputs.environment-source }}" >> "$GITHUB_OUTPUT"
-          else
-            env_map='${{ inputs.environment-map || env.default-tag-map }}'
-            source=`echo $env_map | jq -r ".$target"`
+          env_map='${{ vars.ENVIRONMENT_TAG_MAP || env.default-tag-map }}'
+          source=`echo $env_map | jq -r ".$target"`
 
-            if [ "$source" != "null" ]; then
-              echo "source=$source" >> "$GITHUB_OUTPUT"
-            else
-              echo "Unable to calculate source for ${{ inputs.environment-target }}." >> $GITHUB_STEP_SUMMARY
-              exit 1
-            fi
+          if [ "$source" != "null" ]; then
+            echo "source=$source" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unable to calculate source for ${{ inputs.environment-target }}." >> $GITHUB_STEP_SUMMARY
+            exit 1
           fi
         env:
           default-tag-map: > # Note that this is a JSON string
             {
-              "development": "development",
-              "test": "development",
-              "staging": "test",
-              "production": "staging"
+              "sandbox": "staging",
+              "test": "development"
             }
 
   promote-tag:
@@ -149,7 +136,7 @@ jobs:
       # Setup
       - name: Setup Docker environment
         id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/docker/setup@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/setup@v2
         with:
           vendor: ${{ inputs.vendor }}
           container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
@@ -175,7 +162,7 @@ jobs:
       # Rollout
       - name: Rollout on cluster
         if: ${{ vars.K8S_CLUSTER_ID }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@v2
         with:
           vendor: ${{ inputs.vendor }}
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
@@ -197,7 +184,7 @@ jobs:
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
       - name: Redeploy Serverless Container
         if: ${{ vars.SERVERLESS_CONTAINER_ID }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/redeploy@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/redeploy@v2
         with:
           vendor: ${{ inputs.vendor }}
           container-id: ${{ vars.SERVERLESS_CONTAINER_ID }}

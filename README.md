@@ -28,10 +28,13 @@ Infra deployments:
 | -------- | ----------- |
 | [infra-k8s-rollout.yml](Docs/infra-k8s-rollout.md) | Apply k8s configuration for the given deployments |
 | [infra-s3-rollout.yml](Docs/infra-s3-rollout.md) | Apply s3 configuration to the given buckets |
+| [infra-tofu-rollout.yml](Docs/infra-tofu-rollout.md) | Apply Terragrunt/OpenTofu infrastructure (all stacks) |
+| [infra-tofu-destroy.yml](Docs/infra-tofu-destroy.md) | Guarded teardown of Terragrunt/OpenTofu infrastructure |
 
 Verification (PR check):
 
 | Workflow | Description |
 | -------- | ----------- |
 | [infra-k8s-preview.yml](Docs/infra-k8s-preview.md) | Generate a preview of the k8s changes |
+| [infra-tofu-plan.yml](Docs/infra-tofu-plan.md) | Plan Terragrunt/OpenTofu and comment only what changed |
 | [infra-lint.yml](Docs/infra-lint.md) | Lint infra changes |

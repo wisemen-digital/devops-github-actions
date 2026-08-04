@@ -2,7 +2,7 @@
 name: Build & deploy to environment
 
 #
-# Build the docker image, and deploy it to the given environment.
+# Build the docker image, and deploy it to the right environment, depending on the git context.
 #
 
 on:
@@ -27,10 +27,6 @@ on:
     inputs:
       vendor:
         description: The vendor to communicate with (azure, digitalocean, scaleway)
-        type: string
-        required: true
-      environment:
-        description: Target environment to deploy to
         type: string
         required: true
       image:
@@ -79,11 +75,12 @@ jobs:
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     environment: ${{ inputs.environment }}
     outputs:
+      environment: ${{ steps.gen-env.outputs.environment }}
       variants: ${{ steps.gen-matrix.outputs.variants }}
     steps:
       - name: Validate & generate docker workflow inputs
         id: gen-matrix
-        uses: wisemen-digital/devops-github-actions/.github/actions/docker/validate-and-generate-inputs@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/validate-and-generate-inputs@v2
         with:
           vendor: ${{ inputs.vendor }}
           image-variants: ${{ inputs.image-variants }}
@@ -99,21 +96,26 @@ jobs:
           # Vendor: scaleway
           scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Validate git & generate environment
+        id: gen-env
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/validate-and-generate-env@v2
 
   build-and-deploy:
-    name: Build & Deploy ${{ matrix.variant.path }} to ${{ inputs.environment }}
+    name: Build & Deploy ${{ matrix.variant.path }} to ${{ needs.validate-and-generate-matrix.outputs.environment }}
     needs: [validate-and-generate-matrix]
-    if: ${{ needs.validate-and-generate-matrix.outputs.variants != '[]' }}
+    if: |
+      ${{ needs.validate-and-generate-matrix.outputs.environment != '' &&
+        needs.validate-and-generate-matrix.outputs.variants != '[]' }}
     strategy:
       matrix:
         variant: ${{ fromJson(needs.validate-and-generate-matrix.outputs.variants) }}
     runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
-    environment: ${{ inputs.environment }}
+    environment: ${{ needs.validate-and-generate-matrix.outputs.environment }}
     steps:
       # Setup
       - name: Setup Docker environment
         id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/docker/setup@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/setup@v2
         with:
           vendor: ${{ inputs.vendor }}
           container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
@@ -135,7 +137,7 @@ jobs:
       - name: Calculate image metadata
         run: |
           image_ref="${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}"
-          echo "tags=`echo '${{ inputs.environment || github.ref_name }}' | \
+          echo "tags=`echo '${{ needs.validate-and-generate-matrix.outputs.environment || github.ref_name }}' | \
             sed "s#/#_#g;s#[^,]*#${image_ref}:&#g"`" >> "$GITHUB_ENV"
           echo "timestamp=`date +'%Y-%m-%dT%H:%M:%S'`" >> "$GITHUB_ENV"
       # Build
@@ -157,7 +159,7 @@ jobs:
       # Rollout
       - name: Rollout on cluster
         if: ${{ vars.K8S_CLUSTER_ID }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/k8s/rollout@v2
         with:
           vendor: ${{ inputs.vendor }}
           cluster-id: ${{ vars.K8S_CLUSTER_ID }}
@@ -179,7 +181,7 @@ jobs:
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
       - name: Redeploy Serverless Container
         if: ${{ vars.SERVERLESS_CONTAINER_ID }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/redeploy@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/redeploy@v2
         with:
           vendor: ${{ inputs.vendor }}
           container-id: ${{ vars.SERVERLESS_CONTAINER_ID }}
