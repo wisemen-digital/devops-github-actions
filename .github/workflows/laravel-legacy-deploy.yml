@@ -24,6 +24,12 @@ on:
         required: true
         type: string
     secrets:
+      COMPOSER_AUTH:
+        description: JSON for access to private packages
+        required: false
+      EXTRA_NPMRC:
+        description: Snippet to place in `.npmrc` to access private packages
+        required: false
       SSH_KEY:
         description: Private SSH key
         required: true
@@ -49,12 +55,18 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
       - name: Install dependencies
         run: composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+        env:
+          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
       # Build (front-end)
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         if: hashFiles('pnpm-lock.yaml') != ''
         with:
           cache: true
+      - name: Configure private NPM access
+        if: hashFiles('pnpm-lock.yaml') != ''
+        run: |
+          echo "${{ secrets.EXTRA_NPMRC }}" >> .npmrc
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline --dev
         if: hashFiles('pnpm-lock.yaml') != ''
