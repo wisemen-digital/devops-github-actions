@@ -91,13 +91,8 @@ runs:
             ;;
         esac
 
-        # Transform K8S labels
-        if [ -z "${{ inputs.variant-path }}" ]; then
-          echo "k8s_labels=${{ inputs.k8s-labels }}" >> "$GITHUB_OUTPUT"
-        else
-          labels=(${{ inputs.k8s-labels }} variant=${{ inputs.variant-path }})
-          echo "k8s_labels=$(IFS=,;echo "${labels[*]}")" >> "$GITHUB_OUTPUT"
-        fi
+        # K8S rollout labels
+        echo "k8s_labels=${{ inputs.k8s-labels }}" >> "$GITHUB_OUTPUT"
     # Prep. docker environment
     - name: Checkout
       if: ${{ inputs.prepare-for-building == 'true' }}
