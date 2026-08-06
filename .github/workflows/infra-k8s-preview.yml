@@ -38,8 +38,14 @@ jobs:
         run: |
           changed_paths=`echo $matrix | jq -r '.[].path'`
 
+          if [ -z "$changed_paths" ]; then
+            echo "No changed k8s paths; nothing to preview."
+            exit 0
+          fi
+
           # Generate new content
           while IFS= read -r path; do
+            [ -z "$path" ] && continue
             echo "Processing new $path…"
             mkdir -p `dirname diff-new/$path`
             if [ -e "$path" ]; then
@@ -57,6 +63,7 @@ jobs:
 
           # Generate old content
           while IFS= read -r path; do
+            [ -z "$path" ] && continue
             echo "Processing old $path…"
             mkdir -p `dirname diff-old/$path`
             if [ -e "$path" ]; then
@@ -71,6 +78,7 @@ jobs:
           {
             echo 'contents<<EOF'
             while IFS= read -r path; do
+              [ -z "$path" ] && continue
               echo "<details><summary>$path</summary>"
               echo -e '\n```diff'
               diff -u "diff-old/$path" "diff-new/$path" || true
