@@ -137,16 +137,27 @@ jobs:
         run: |
           rsync -crltDz . ${{ vars.DEPLOY_URL }}:www/htdocs --delete-delay \
             ${{ inputs.extra-rsync-args }} \
-            --include=public/index.php \
-            --exclude=.env \
-            --exclude=.git \
-            --exclude=node_modules \
-            --exclude=tests \
-            --exclude='public/*' \
-            --exclude=storage/logs \
-            --exclude=storage/framework/sessions \
-            --exclude=storage/framework/cache \
-            --exclude='storage/oauth-*.key'
+            --include='/public/index.php' \
+            --exclude='.git*' \
+            --exclude='/.env*' \
+            --exclude='/.editorconfig' \
+            --exclude='/.git/' \
+            --exclude='/.styleci.yml' \
+            --exclude='/.valetrc' \
+            --exclude='/docker-compose.yaml' \
+            --exclude='/LICENSE' \
+            --exclude='/node_modules/' \
+            --exclude='/package*.json' \
+            --exclude='/phpunit.xml' \
+            --exclude='/pnpm*.yaml' \
+            --exclude='/public/*' \
+            --exclude='/README.md' \
+            --exclude='/tests/' \
+            --exclude='/storage/logs/' \
+            --exclude='/storage/framework/sessions/' \
+            --exclude='/storage/framework/cache/' \
+            --exclude='/storage/oauth-*.key' \
+            --exclude='/webpack.mix.js'
       # Note: from this point on the new `.php-version` file is on server, and
       #   it'll automatically use the new version, ensuring `artisan` commands
       #   succeed.
