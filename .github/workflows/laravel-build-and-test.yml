@@ -146,7 +146,11 @@ jobs:
           cp -f .env.testing .env
           sed -i '/^DB_/d' .env
           php artisan key:generate --force
-          php artisan passport:keys --force
+          if php artisan list | grep -q "passport:keys"; then
+            php artisan passport:keys --force
+          else
+            echo "Passport is not installed. Skipping key generation."
+          fi
           cp -f .env .env.testing
           php artisan config:cache
           php artisan migrate --seed
