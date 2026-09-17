@@ -18,6 +18,16 @@ on:
         type: string
         required: false
         default: terraform
+      exclude:
+        description: >-
+          Resource addresses to keep, whitespace separated. Each becomes a
+          -exclude=ADDRESS flag on the destroy. Use for resources carrying
+          lifecycle.prevent_destroy, which abort the run otherwise. Note that
+          OpenTofu also skips whatever depends on an excluded address, which in
+          a destroy plan means its parents.
+        type: string
+        required: false
+        default: ''
     secrets:
       K8S_MODULES_SECRET:
         description: Token with read access to the Terraform module repositories
@@ -80,8 +90,20 @@ jobs:
       # `run-all destroy` walks the dependency graph in REVERSE:
       #   hoop + github → scw/environments/* → scw/infras
       - name: Terragrunt Destroy
+        env:
+          # Via env, not a ${{ }} interpolation in the script: the addresses
+          # reach the loop as data and end up as literal argv entries.
+          EXCLUDE: ${{ inputs.exclude }}
         run: |
+          exclude_args=()
+          for address in $EXCLUDE; do
+            exclude_args+=("-exclude=${address}")
+          done
+          if [ ${#exclude_args[@]} -gt 0 ]; then
+            echo "::notice::Kept out of the destroy: ${exclude_args[*]}"
+          fi
           terragrunt run-all destroy \
             --terragrunt-working-dir="${{ inputs.working-dir }}" \
             --terragrunt-non-interactive \
-            -auto-approve
+            -auto-approve \
+            "${exclude_args[@]}"
