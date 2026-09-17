@@ -1,12 +1,12 @@
 ---
 name: Serverless Container Redeploy
-description: Trigger a redeploy on a Serverless Container
+description: Trigger a redeploy on one or more Serverless Containers
 inputs:
   vendor:
     description: The vendor to communicate with (azure, digitalocean, scaleway)
     required: true
   container-id:
-    description: Target Scaleway Serverless container ID
+    description: Target Scaleway Serverless container IDs (comma separated)
     required: true
   # Vendor: Azure
   azure-client-id:
@@ -62,15 +62,25 @@ runs:
 
     - name: Trigger redeploy
       shell: bash
+      env:
+        CONTAINER_IDS: ${{ inputs.container-id }}
+        SCALEWAY_REGION: ${{ inputs.scaleway-region }}
+        VENDOR: ${{ inputs.vendor }}
       run: |
         set -euo pipefail
 
-        case "${{ inputs.vendor }}" in
+        case "$VENDOR" in
           scaleway)
-            scw container container redeploy "${{ inputs.container-id }}" region="${{ inputs.scaleway-region }}"
+            container_ids_input="${CONTAINER_IDS//,/ }"
+            read -r -a container_ids <<< "$container_ids_input"
+
+            for container_id in "${container_ids[@]}"; do
+              echo "Redeploying Serverless Container: $container_id"
+              scw container container redeploy "$container_id" region="$SCALEWAY_REGION"
+            done
             ;;
           *)
-            echo "Unsupported vendor '${{ inputs.vendor }}'"
+            echo "Unsupported vendor '$VENDOR'"
             exit 1
             ;;
         esac
