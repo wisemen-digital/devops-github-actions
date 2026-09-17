@@ -18,6 +18,14 @@ vue|web:
   - …
 ```
 
+### Check for leaks
+
+Simply runs `gitleaks` with a default configuration, see the [docs](https://github.com/gitleaks/gitleaks).
+
+### Danger
+
+Runs [Danger](https://danger.systems/js/) with our own rules setup, see the [docs](https://github.com/wisemen-digital/wisemen-core/tree/main/packages/dev-ops/danger) for more information.
+
 ### Lint
 
 This job presumes there's a `lint` package command, which usually invokes `eslint` with some file filters.
