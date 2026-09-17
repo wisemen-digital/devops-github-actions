@@ -45,7 +45,7 @@ Note that the tests are run depending on the stack:
 
 | Input | Description |
 | ----- | ----------- |
-| `node-version` | Node version to use, defaults to `lts` |
+| `node-runtime` | Node runtime to use, defaults to `node@lts` |
 | `turbo-cache-enabled` | Enable Turbo remote cache; requires `TURBO_TOKEN` unless set to `false` (defaults to `true`) |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
 | `test-mssql-enabled` | Whether or not to create the MS SQL service (defaults to `false`) |

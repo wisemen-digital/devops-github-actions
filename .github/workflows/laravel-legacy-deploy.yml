@@ -59,16 +59,18 @@ jobs:
           COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
       # Build (front-end)
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/setup@v2
         if: hashFiles('pnpm-lock.yaml') != ''
         with:
           cache: true
+          install: false
+          runtime: 'node@lts'
       - name: Configure private NPM access
         if: hashFiles('pnpm-lock.yaml') != ''
         run: |
           echo "${{ secrets.EXTRA_NPMRC }}" >> .npmrc
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline --dev
+        run: pnpm install --frozen-lockfile --prefer-offline --no-runtime --dev
         if: hashFiles('pnpm-lock.yaml') != ''
       - name: Compile Front-End
         if: hashFiles('pnpm-lock.yaml') != ''
