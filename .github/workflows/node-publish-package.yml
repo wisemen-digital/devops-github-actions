@@ -8,9 +8,9 @@ name: Publish Node package to NPM and create a GH release
 on:
   workflow_call:
     inputs:
-      node-version:
-        description: Node Version (such as 20.5)
-        default: 'lts/*'
+      node-runtime:
+        description: Node Version (such as `node@24`)
+        default: 'node@lts'
         type: string
       registry-url:
         description: NPM Registry URL
@@ -67,14 +67,13 @@ jobs:
         with:
           ref: ${{ env.git-ref }}
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
-      - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: pnpm/setup@v2
         with:
-          node-version: ${{ inputs.node-version }}
-          cache: 'pnpm'
+          cache: true
+          install: false
+          runtime: ${{ inputs.node-runtime }}
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile ${{ needs.prepare.outputs.pnpm-flags }}
+        run: pnpm install --frozen-lockfile --prefer-offline --no-runtime ${{ needs.prepare.outputs.pnpm-flags }}
       - name: Run build
         run: pnpm ${{ needs.prepare.outputs.pnpm-flags }} run build
   deploy:
@@ -89,15 +88,19 @@ jobs:
         with:
           ref: ${{ env.git-ref }}
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
-      - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: pnpm/setup@v2
         with:
-          node-version: ${{ inputs.node-version }}
-          cache: 'pnpm'
-          registry-url: ${{ inputs.registry-url }}
+          cache: true
+          install: false
+          runtime: ${{ inputs.node-runtime }}
+      # Only needed until https://github.com/pnpm/setup/pull/50 is merged
+      - name: Configure registry access
+        run: |
+          REGISTRY="${{ inputs.registry-url }}"
+          REGISTRY_KEY="${REGISTRY#https://}/:_authToken"
+          pnpm config set "$REGISTRY_KEY" "${{ secrets.NPM_TOKEN }}"
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile ${{ needs.prepare.outputs.pnpm-flags }}
+        run: pnpm install --frozen-lockfile --prefer-offline --no-runtime ${{ needs.prepare.outputs.pnpm-flags }}
       - name: Publish package to registry
         run: >-
           pnpm ${{ needs.prepare.outputs.pnpm-flags }} publish

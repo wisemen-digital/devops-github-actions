@@ -12,6 +12,10 @@ on:
         description: Path to build output
         type: string
         required: true
+      node-runtime:
+        description: Node Version (such as `node@24`)
+        default: 'node@lts'
+        type: string
 
 jobs:
   build:
@@ -21,14 +25,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
-      - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: pnpm/setup@v2
         with:
-          node-version: ${{ inputs.node-version }}
-          cache: 'pnpm'
+          cache: true
+        install: false
+          runtime: ${{ inputs.node-runtime }}
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline --no-runtime
       - name: Build documentation
         run: pnpm docs:build
       - name: Store archive
