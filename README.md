@@ -28,6 +28,7 @@ Infra deployments:
 | -------- | ----------- |
 | [infra-k8s-rollout.yml](Docs/infra-k8s-rollout.md) | Apply k8s configuration for the given deployments |
 | [infra-s3-rollout.yml](Docs/infra-s3-rollout.md) | Apply s3 configuration to the given buckets |
+| [infra-secret-write.yml](Docs/infra-secret-write.md) | Add or overwrite one key in an application's manual secret |
 
 Verification (PR check):
 
