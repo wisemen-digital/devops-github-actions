@@ -18,6 +18,14 @@ vue|web:
   - …
 ```
 
+### Check for leaks
+
+Simply runs `gitleaks` with a default configuration, see the [docs](https://github.com/gitleaks/gitleaks).
+
+### Danger
+
+Runs [Danger](https://danger.systems/js/) with our own rules setup, see the [docs](https://github.com/wisemen-digital/wisemen-core/tree/main/packages/dev-ops/danger) for more information.
+
 ### Lint
 
 This job presumes there's a `lint` package command, which usually invokes `eslint` with some file filters.
@@ -37,7 +45,7 @@ Note that the tests are run depending on the stack:
 
 | Input | Description |
 | ----- | ----------- |
-| `node-version` | Node version to use, defaults to `lts` |
+| `node-runtime` | Node runtime to use, defaults to `node@lts` |
 | `turbo-cache-enabled` | Enable Turbo remote cache; requires `TURBO_TOKEN` unless set to `false` (defaults to `true`) |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
 | `test-mssql-enabled` | Whether or not to create the MS SQL service (defaults to `false`) |
