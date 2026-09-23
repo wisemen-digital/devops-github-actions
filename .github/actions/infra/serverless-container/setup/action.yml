@@ -5,9 +5,6 @@ inputs:
   vendor:
     description: The vendor to communicate with (azure, digitalocean, scaleway)
     required: true
-  container-id:
-    description: Target Scaleway Serverless container ID
-    required: true
   # Vendor: Azure
   azure-client-id:
     description: Azure client ID for login with an Azure service principal
