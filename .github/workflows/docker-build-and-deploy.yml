@@ -16,7 +16,6 @@ on:
     # - K8S_NAMESPACE
     # - RUNNER_DEFAULT
     # - RUNNER_INFRA
-    # - SERVERLESS_CONTAINER_ID
     # - SERVERLESS_CONTAINER_IDS
     # For Azure vendor:
     # - AZURE_RESOURCE_GROUP
@@ -100,6 +99,11 @@ jobs:
           # Vendor: scaleway
           scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Check obsolete variables
+        if: ${{ vars.SERVERLESS_CONTAINER_ID }}
+        run: |
+          echo "::error title=OBSOLETE VARIABLE::SERVERLESS_CONTAINER_ID is obsolete. Use SERVERLESS_CONTAINER_IDS instead."
+          exit 1
 
   build-and-deploy:
     name: Build & Deploy ${{ matrix.variant.path }} to ${{ inputs.environment }}
@@ -179,31 +183,12 @@ jobs:
           scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
           scaleway-region: ${{ vars.SCALEWAY_REGION }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
-      - name: Deployment summary
-        if: ${{ vars.K8S_CLUSTER_ID }}
-        run: |
-          {
-            echo "## Docker build & deploy"
-            echo ""
-            echo "- Image: \`${{ env.tags }}\`"
-            echo "- Vendor: \`${{ inputs.vendor }}\`"
-            if [ -n "${{ vars.K8S_CLUSTER_ID }}" ]; then
-              echo "- Cluster: \`${{ vars.K8S_CLUSTER_ID }}\`"
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  redeploy-serverless-containers:
-    name: Redeploy Serverless Containers
-    needs: [build-and-deploy]
-    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
-    environment: ${{ inputs.environment }}
-    steps:
       - name: Redeploy Serverless Containers
-        if: ${{ vars.SERVERLESS_CONTAINER_IDS || vars.SERVERLESS_CONTAINER_ID }}
+        if: ${{ vars.SERVERLESS_CONTAINER_IDS }}
         uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/redeploy@v1
         with:
           vendor: ${{ inputs.vendor }}
-          container-id: ${{ vars.SERVERLESS_CONTAINER_IDS || vars.SERVERLESS_CONTAINER_ID }}
+          container-ids: ${{ vars.SERVERLESS_CONTAINER_IDS }}
           # Vendor: azure
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -216,3 +201,23 @@ jobs:
           scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
           scaleway-region: ${{ vars.SCALEWAY_REGION }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Deployment summary
+        if: ${{ vars.K8S_CLUSTER_ID && !vars.SERVERLESS_CONTAINER_IDS }}
+        run: |
+          if [[ -z "${{ vars.K8S_CLUSTER_ID }}"  && -z "${{ vars.SERVERLESS_CONTAINER_IDS }}" ]]; then
+            echo "::error title=MISSING TARGET::No k8s cluster or serverless container provided!"
+            exit 1
+          fi
+
+          {
+            echo "## Docker build & deploy"
+            echo ""
+            echo "- Image: \`${{ env.tags }}\`"
+            echo "- Vendor: \`${{ inputs.vendor }}\`"
+            if [ -n "${{ vars.K8S_CLUSTER_ID }}" ]; then
+              echo "- Cluster: \`${{ vars.K8S_CLUSTER_ID }}\`"
+            fi
+            if [ -n "${{ vars.SERVERLESS_CONTAINER_IDS }}" ]; then
+              echo "- Containers: \`${{ vars.SERVERLESS_CONTAINER_IDS }}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

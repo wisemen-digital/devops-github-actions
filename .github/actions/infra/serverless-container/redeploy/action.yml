@@ -5,7 +5,7 @@ inputs:
   vendor:
     description: The vendor to communicate with (azure, digitalocean, scaleway)
     required: true
-  container-id:
+  container-ids:
     description: Target Scaleway Serverless container IDs (comma separated)
     required: true
   # Vendor: Azure
@@ -46,7 +46,6 @@ runs:
     - uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/setup@v1
       with:
         vendor: ${{ inputs.vendor }}
-        container-id: ${{ inputs.container-id }}
         # Vendor: azure
         azure-client-id: ${{ inputs.azure-client-id }}
         azure-tenant-id: ${{ inputs.azure-tenant-id }}
@@ -62,25 +61,19 @@ runs:
 
     - name: Trigger redeploy
       shell: bash
-      env:
-        CONTAINER_IDS: ${{ inputs.container-id }}
-        SCALEWAY_REGION: ${{ inputs.scaleway-region }}
-        VENDOR: ${{ inputs.vendor }}
       run: |
         set -euo pipefail
 
-        case "$VENDOR" in
+        case "${{ inputs.vendor }}" in
           scaleway)
-            container_ids_input="${CONTAINER_IDS//,/ }"
-            read -r -a container_ids <<< "$container_ids_input"
-
-            for container_id in "${container_ids[@]}"; do
+            container_ids="${{ inputs.container-ids }}"
+            for container_id in ${container_ids//,/ }; do
               echo "Redeploying Serverless Container: $container_id"
-              scw container container redeploy "$container_id" region="$SCALEWAY_REGION"
+              scw container container redeploy "$container_id" region="${{ inputs.scaleway-region }}"
             done
             ;;
           *)
-            echo "Unsupported vendor '$VENDOR'"
+            echo "Unsupported vendor '${{ inputs.vendor }}'"
             exit 1
             ;;
         esac

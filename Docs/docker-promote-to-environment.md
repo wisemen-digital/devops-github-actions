@@ -12,7 +12,9 @@ A rollout on a cluster in the given namespace. If kubernetes labels are provided
 
 ### Serverless Container Redeploy
 
-A redeploy on an existing Serverless Container. It does not create or update the Serverless Container configuration. The target container must already exist and already be configured to pull the image tag that this workflow publishes.
+A redeploy on one or more existing Serverless Containers. It does not create or update Serverless Container configuration. Every target container must already exist and already be configured to pull the image tag that this workflow publishes.
+
+For multiple containers, set `SERVERLESS_CONTAINER_IDS` to a comma-separated value such as `web-container-id,api-container-id`.
 
 ## Inputs
 
@@ -41,7 +43,7 @@ These are always available, regardless of vendor:
 | `K8S_NAMESPACE` | Target cluster namespace | Variable | Yes |
 | `RUNNER_DEFAULT` | The CI runner for default actions. Defaults to `ubuntu-latest` | Variable | No |
 | `RUNNER_INFRA` | The CI runner for infra actions. Defaults to `ubuntu-latest` | Variable | No |
-| `SERVERLESS_CONTAINER_ID` | Target Serverless Container ID to redeploy | Variable | No |
+| `SERVERLESS_CONTAINER_IDS` | Target Serverless Container IDs to redeploy, separated by commas | Variable | No |
 
 ### Vendor-Specific Inputs
 

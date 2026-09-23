@@ -15,7 +15,7 @@ on:
     # - K8S_NAMESPACE
     # - RUNNER_DEFAULT
     # - RUNNER_INFRA
-    # - SERVERLESS_CONTAINER_ID
+    # - SERVERLESS_CONTAINER_IDS
     # For Azure vendor:
     # - AZURE_RESOURCE_GROUP
     # For DigitalOcean vendor:
@@ -115,6 +115,11 @@ jobs:
           # Vendor: scaleway
           scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Check obsolete variables
+        if: ${{ vars.SERVERLESS_CONTAINER_ID }}
+        run: |
+          echo "::error title=OBSOLETE VARIABLE::SERVERLESS_CONTAINER_ID is obsolete. Use SERVERLESS_CONTAINER_IDS instead."
+          exit 1
       - name: Calculate source
         id: gen-source
         run: |
@@ -203,12 +208,12 @@ jobs:
           scaleway-project-id: ${{ vars.SCALEWAY_PROJECT_ID }}
           scaleway-region: ${{ vars.SCALEWAY_REGION }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
-      - name: Redeploy Serverless Container
-        if: ${{ vars.SERVERLESS_CONTAINER_ID }}
+      - name: Redeploy Serverless Containers
+        if: ${{ vars.SERVERLESS_CONTAINER_IDS }}
         uses: wisemen-digital/devops-github-actions/.github/actions/infra/serverless-container/redeploy@v1
         with:
           vendor: ${{ inputs.vendor }}
-          container-id: ${{ vars.SERVERLESS_CONTAINER_ID }}
+          container-ids: ${{ vars.SERVERLESS_CONTAINER_IDS }}
           # Vendor: azure
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -222,9 +227,9 @@ jobs:
           scaleway-region: ${{ vars.SCALEWAY_REGION }}
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
       - name: Deployment summary
-        if: ${{ vars.K8S_CLUSTER_ID && !vars.SERVERLESS_CONTAINER_ID }}
+        if: ${{ vars.K8S_CLUSTER_ID && !vars.SERVERLESS_CONTAINER_IDS }}
         run: |
-          if [[ -z "${{ vars.K8S_CLUSTER_ID }}"  && -z "${{ vars.SERVERLESS_CONTAINER_ID }}" ]]; then
+          if [[ -z "${{ vars.K8S_CLUSTER_ID }}"  && -z "${{ vars.SERVERLESS_CONTAINER_IDS }}" ]]; then
             echo "::error title=MISSING TARGET::No k8s cluster or serverless container provided!"
             exit 1
           fi
@@ -237,8 +242,8 @@ jobs:
             if [ -n "${{ vars.K8S_CLUSTER_ID }}" ]; then
               echo "- Cluster: \`${{ vars.K8S_CLUSTER_ID }}\`"
             fi
-            if [ -n "${{ vars.SERVERLESS_CONTAINER_ID }}" ]; then
-              echo "- Container: \`${{ vars.SERVERLESS_CONTAINER_ID }}\`"
+            if [ -n "${{ vars.SERVERLESS_CONTAINER_IDS }}" ]; then
+              echo "- Containers: \`${{ vars.SERVERLESS_CONTAINER_IDS }}\`"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Mirror production image to secondary registry
