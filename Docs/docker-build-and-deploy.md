@@ -10,7 +10,7 @@ A rollout on a cluster in the given namespace. If kubernetes labels are provided
 
 ### Serverless Container Redeploy
 
-A redeploy on one or more existing Serverless Containers. The workflow does not create or update Serverless Container configuration. Every target container must already exist and already be configured to pull an image tag that this workflow publishes.
+A redeploy on one or more existing Serverless Containers. The workflow does not create or update Serverless Container configuration. Every target container must already exist and already be configured to pull an image tag that this workflow publishes. For image variants, each build job only redeploys listed containers whose configured image matches that variant's image.
 
 For multiple containers, set `SERVERLESS_CONTAINER_IDS` to a comma-separated value such as `web-container-id,api-container-id`.
 

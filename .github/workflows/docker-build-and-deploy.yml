@@ -189,6 +189,7 @@ jobs:
         with:
           vendor: ${{ inputs.vendor }}
           container-ids: ${{ vars.SERVERLESS_CONTAINER_IDS }}
+          container-image: ${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}
           # Vendor: azure
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}

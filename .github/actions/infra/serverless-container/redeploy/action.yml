@@ -8,6 +8,9 @@ inputs:
   container-ids:
     description: Target Scaleway Serverless container IDs (comma separated)
     required: true
+  container-image:
+    description: Container image reference without tag; only containers using this image are redeployed
+    required: false
   # Vendor: Azure
   azure-client-id:
     description: Azure client ID for login with an Azure service principal
@@ -67,7 +70,25 @@ runs:
         case "${{ inputs.vendor }}" in
           scaleway)
             container_ids="${{ inputs.container-ids }}"
+            container_image="${{ inputs.container-image }}"
+
             for container_id in ${container_ids//,/ }; do
+              if [[ -n "$container_image" ]]; then
+                configured_image="$(
+                  scw container container get "$container_id" \
+                    region="${{ inputs.scaleway-region }}" \
+                    -o json \
+                    | jq -er '.image'
+                )"
+
+                if [[ "$configured_image" != "$container_image" ]] \
+                  && [[ "$configured_image" != "$container_image":* ]] \
+                  && [[ "$configured_image" != "$container_image"@* ]]; then
+                  echo "Skipping Serverless Container $container_id: configured image is $configured_image"
+                  continue
+                fi
+              fi
+
               echo "Redeploying Serverless Container: $container_id"
               scw container container redeploy "$container_id" region="${{ inputs.scaleway-region }}"
             done
