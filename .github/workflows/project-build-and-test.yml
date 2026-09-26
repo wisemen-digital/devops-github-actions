@@ -12,6 +12,10 @@ on:
     # - RUNNER_DEFAULT
     # - RUNNER_TEST
     inputs:
+      danger-enabled:
+        description: Run Danger checks
+        default: true
+        type: boolean
       lint-timeout:
         description: Time (in minutes) after wich the linter job will timeout
         default: 5
@@ -115,6 +119,7 @@ jobs:
           github-access-token: ${{ github.token }}
   danger:
     name: Run Danger
+    if: ${{ inputs.danger-enabled }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

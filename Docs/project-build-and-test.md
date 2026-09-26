@@ -25,6 +25,7 @@ Simply runs `gitleaks` with a default configuration, see the [docs](https://gith
 ### Danger
 
 Runs [Danger](https://danger.systems/js/) with our own rules setup, see the [docs](https://github.com/wisemen-digital/wisemen-core/tree/main/packages/dev-ops/danger) for more information.
+Set `danger-enabled` to `false` to skip the Danger job.
 
 ### Lint
 
@@ -45,6 +46,7 @@ Note that the tests are run depending on the stack:
 
 | Input | Description |
 | ----- | ----------- |
+| `danger-enabled` | Whether to run Danger checks (defaults to `true`) |
 | `node-runtime` | Node runtime to use, defaults to `node@lts` |
 | `turbo-cache-enabled` | Enable Turbo remote cache; requires `TURBO_TOKEN` unless set to `false` (defaults to `true`) |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
