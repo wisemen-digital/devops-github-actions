@@ -3,18 +3,18 @@ name: Format, Build & Test Flutter app
 
 #
 # Format, build, analyze & test a Flutter application
-# Note: will create artifacts for generated code and coverage reports.
+# Note: code is generated once with Melos and shared with the test jobs as an artifact.
 #
 
 on:
   workflow_call:
     inputs:
       build-timeout:
-        description: Time (in minutes) after which the test job will timeout
+        description: Time (in minutes) after which the code generation will timeout
         default: 5
         type: number
       test-timeout:
-        description: Time (in minutes) after which the test job will timeout
+        description: Time (in minutes) after which the tests will timeout
         default: 5
         type: number
       test-coverage:
@@ -30,8 +30,12 @@ on:
         default: false
         type: boolean
       use-melos:
-        description: Whether to use Melos for build runner
-        default: false
+        description: Deprecated, Melos is always used for code generation
+        default: true
+        type: boolean
+      generate-network:
+        description: Generate the network package in packages/generated_network with swagger_parser (defaults to true)
+        default: true
         type: boolean
 
 concurrency:
@@ -39,30 +43,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-formatting:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: Run flutter pub get
-        run: flutter pub get
-      - name: Verify formatting
-        if: ${{ !inputs.skip-formatting }}
-        run: dart format . --set-exit-if-changed
-      - name: Generate intl
-        run: |
-          dart pub global activate intl_utils
-          dart pub global run intl_utils:generate
-      - name: Upload generated code
-        uses: actions/upload-artifact@v4
-        with:
-          name: intl
-          path: lib/generated
-
   generate-matrix:
     name: Generate job matrices
     runs-on: ubuntu-latest
@@ -75,11 +55,9 @@ jobs:
         with:
           filter-file: .github/package-filters.yaml
 
-  generate-code-melos:
-    needs: [generate-matrix, verify-formatting]
+  generate-code:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout }}
-    if: ${{ inputs.use-melos }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Flutter
@@ -88,108 +66,51 @@ jobs:
           channel: stable
           cache: true
       - name: Run flutter pub get
-        run: flutter pub get
-      - name: Initialize Melos
-        uses: bluefireteam/melos-action@v3
-        with:
-          run-bootstrap: false
+        run: flutter pub get --enforce-lockfile
+      - name: Verify formatting
+        if: ${{ !inputs.skip-formatting }}
+        run: dart format . --set-exit-if-changed
+      - name: Generate intl
+        run: |
+          dart pub global activate intl_utils
+          dart pub global run intl_utils:generate
+      - name: Generate network package
+        if: ${{ inputs.generate-network && hashFiles('packages/generated_network/pubspec.yaml') != '' }}
+        working-directory: packages/generated_network
+        run: dart run swagger_parser
       - name: Generate code with Melos
-        run: melos build
+        run: dart run melos run build --no-select
       - name: Upload generated code
         uses: actions/upload-artifact@v4
         with:
-          name: app-lib
+          name: generated-code
           path: |
             lib
             packages
 
-  generate-code:
-    needs: [generate-matrix, verify-formatting]
-    runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.build-timeout }}
-    if: ${{ !inputs.use-melos }}
-    strategy:
-      matrix:
-        deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: Run flutter pub get
-        run: flutter pub get
-      - name: Generate ${{ matrix.deployment.path }} code
-        working-directory: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
-        run: |
-          if grep -q "build_runner" pubspec.yaml; then
-            dart pub run build_runner build -d
-          fi
-      - name: Upload generated code
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.deployment.path == '.' && 'app-lib' || matrix.deployment.path }}
-          path: ${{ matrix.deployment.path == '.' && 'lib' || format('packages/{0}', matrix.deployment.path) }}
-
-  merge:
-    runs-on: ubuntu-latest
-    needs: [generate-code, generate-code-melos]
-    if: ${{ always() && (needs.generate-code.result == 'success' || needs.generate-code-melos.result == 'success') }}
-    steps:
-      - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
-        with:
-          name: merged-artifacts
-          delete-merged: true
-          separate-directories: true
-
   test:
-    needs: [generate-matrix, merge]
+    needs: [generate-matrix, generate-code]
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.test-timeout }}
+    if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
     strategy:
       matrix:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
-    if: ${{ always() && needs.generate-matrix.outputs.deployments != '[]' && (needs.generate-code.result == 'success' || needs.generate-code-melos.result == 'success') }}
     env:
       WORKING_DIRECTORY: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
     steps:
       - uses: actions/checkout@v4
-      - name: Download artifacts
+      - name: Download generated code
         uses: actions/download-artifact@v4
         with:
-          name: merged-artifacts
-          path: tmp-artifacts
-      - name: Move artifacts
-        shell: bash
-        run: |
-          rsync -a --ignore-existing --remove-source-files tmp-artifacts/app-lib/* lib
-          if [ -d "./tmp-artifacts/app-lib/packages" ]; then
-            for package in ./tmp-artifacts/app-lib/packages/*; do
-              packageName=$(basename "$package")
-              if [ -d "$package" ]; then
-                rsync -a --ignore-existing --remove-source-files "$package/" "packages/$packageName/"
-              fi
-            done
-          fi
-          rm -rf tmp-artifacts/app-lib/
-          rsync -a --ignore-existing --remove-source-files tmp-artifacts/intl/* lib/generated
-          rm -rf tmp-artifacts/intl/
-          for package in ./tmp-artifacts/*; do
-            packageName=$(basename "$package")
-            if [ -d "$package" ]; then
-              rsync -a --ignore-existing --remove-source-files "$package/" "packages/$packageName/"
-            fi
-          done
-          rm -rf tmp-artifacts/
+          name: generated-code
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
       - name: Run flutter pub get
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
       - name: Analyze project source
         shell: bash
         working-directory: ${{ env.WORKING_DIRECTORY }}
@@ -199,14 +120,14 @@ jobs:
         working-directory: ${{ env.WORKING_DIRECTORY }}
         run: flutter test --no-pub --coverage
       - name: Setup LCOV
+        if: ${{ !inputs.skip-reporting }}
         uses: hrishikesh-kadam/setup-lcov@v1
-
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v7.0.2
         if: ${{ !inputs.skip-reporting }}
         with:
           coverage-files: ${{ env.WORKING_DIRECTORY }}/coverage/lcov.info
-          minimum-coverage: ${{ env.WORKING_DIRECTORY }}/${{ inputs.test-coverage }}
+          minimum-coverage: ${{ inputs.test-coverage }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: ${{ env.WORKING_DIRECTORY }}
           artifact-name: ${{ matrix.deployment.path }}-coverage
