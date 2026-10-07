@@ -94,7 +94,6 @@ runs:
       if: ${{ inputs.vendor == 'scaleway' }}
       uses: scaleway/action-scw@v0
       with:
-        version: v2.64.0 # TEMP until https://github.com/scaleway/scaleway-cli/issues/6378 is fixed
         access-key: ${{ inputs.scaleway-access-key }}
         secret-key: ${{ inputs.scaleway-secret-key }}
         default-organization-id: ${{ inputs.scaleway-organization-id }}
