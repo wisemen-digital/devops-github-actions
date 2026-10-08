@@ -44,6 +44,13 @@ Only provide the following for your chosen vendor.
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID for login with an Azure service principal | Secret | Yes |
 | `AZURE_TENANT_ID` | Azure tenant ID for login with an Azure service principal | Secret | Yes |
 
+Azure clusters are private: their API server only resolves inside the VNet, so a
+hosted runner cannot reach it directly. `kubectl` is therefore tunnelled through
+the Azure control plane with `az aks command invoke`. This requires the service
+principal to hold `Microsoft.ContainerService/managedClusters/runcommand/action`
+and `.../commandResults/read` (both included in *Azure Kubernetes Service Cluster
+User Role*), and the cluster must not have `--disable-run-command` set.
+
 </details>
 
 #### DigitalOcean

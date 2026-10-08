@@ -83,31 +83,76 @@ runs:
         DEPLOYMENTS: ${{ inputs.rollout-deployments }}
         LABELS: ${{ inputs.rollout-labels }}
         IMAGE: ${{ inputs.rollout-image }}
+        NAMESPACE: ${{ inputs.rollout-namespace }}
+        VENDOR: ${{ inputs.vendor }}
+        CLUSTER_ID: ${{ inputs.cluster-id }}
+        AZURE_RESOURCE_GROUP: ${{ inputs.azure-resource-group }}
       run: |
+        # Azure clusters are private: their API server only resolves inside the
+        # VNet, so kubectl cannot reach them from a hosted runner. Tunnel the
+        # command through the Azure control plane instead.
+        run_cmd() {
+          if [ "$VENDOR" != "azure" ]; then
+            eval "$*"
+            return
+          fi
+
+          local result
+          result=`az aks command invoke \
+            --name "$CLUSTER_ID" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --command "$*" \
+            --output json`
+
+          jq -r '.logs // ""' <<< "$result"
+
+          # `az aks command invoke` exits 0 even when the remote command failed,
+          # so the remote exit code has to be checked explicitly.
+          local state
+          local code
+          state=`jq -r '.provisioningState // ""' <<< "$result"`
+          code=`jq -r '.exitCode // 1' <<< "$result"`
+
+          if [ "$state" != "Succeeded" ]; then
+            echo "::error::Run command did not complete (state: $state): $*" >&2
+            return 1
+          fi
+          if [ "$code" != "0" ]; then
+            echo "::error::Command failed on cluster with exit code $code: $*" >&2
+            return "$code"
+          fi
+        }
+
         # Restart multiple deployments
         if [ -n "$DEPLOYMENTS" ]; then
           for deployment in ${DEPLOYMENTS//,/ }; do
-            kubectl rollout restart deployment \
+            run_cmd kubectl rollout restart deployment \
               "$deployment" \
-              --namespace="${{ inputs.rollout-namespace }}"
+              --namespace="$NAMESPACE"
           done
 
         # Restart multiple labels
         elif [ -n "$LABELS" ]; then
-          kubectl rollout restart deployment \
+          run_cmd kubectl rollout restart deployment \
             --selector="$LABELS" \
-            --namespace="${{ inputs.rollout-namespace }}"
+            --namespace="$NAMESPACE"
 
         # Restart deployments running the image
+        # jq stays on the runner, so the cluster only has to run plain kubectl
         elif [ -n "$IMAGE" ]; then
-          kubectl get deployment \
-            --namespace="${{ inputs.rollout-namespace }}" -o json \
+          deployments=`run_cmd kubectl get deployment --namespace="$NAMESPACE" -o json \
             | jq -r --arg img "$IMAGE" '.items[] | select(any(.spec.template.spec.containers[]; .image | startswith($img + ":"))) | .metadata.name' \
-            | xargs -r kubectl rollout restart deployment \
-              --namespace="${{ inputs.rollout-namespace }}"
+            | tr '\n' ' '`
+
+          if [ -n "${deployments// /}" ]; then
+            run_cmd kubectl rollout restart deployment $deployments \
+              --namespace="$NAMESPACE"
+          else
+            echo "No deployments running image $IMAGE; nothing to restart."
+          fi
 
         # Restart everything
         else
-          kubectl rollout restart deployment \
-            --namespace="${{ inputs.rollout-namespace }}"
+          run_cmd kubectl rollout restart deployment \
+            --namespace="$NAMESPACE"
         fi
