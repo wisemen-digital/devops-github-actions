@@ -41,6 +41,10 @@ on:
         description: Generate the network package in packages/generated_network with swagger_parser (defaults to true)
         default: true
         type: boolean
+    secrets:
+      SSH_PRIVATE_KEY:
+        description: Private SSH key(s) used to fetch git dependencies from private repositories
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -62,8 +66,15 @@ jobs:
   generate-code:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout }}
+    env:
+      HAS_SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Set up SSH agent
+        if: ${{ env.HAS_SSH_KEY == 'true' }}
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -103,8 +114,14 @@ jobs:
         deployment: ${{ fromJson(needs.generate-matrix.outputs.deployments) }}
     env:
       WORKING_DIRECTORY: ${{ matrix.deployment.path == '.' && './' || format('packages/{0}', matrix.deployment.path) }}
+      HAS_SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Set up SSH agent
+        if: ${{ env.HAS_SSH_KEY == 'true' }}
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - name: Download generated code
         uses: actions/download-artifact@v4
         with:
