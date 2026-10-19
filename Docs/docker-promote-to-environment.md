@@ -6,6 +6,12 @@ This workflow will grab the existing docker image & tag, and triggers either a c
 
 If you don't provide a source environment to deploy "from", it will calculate it based on the "target" environment. This will be done based on the usual order of `development -> test -> staging -> production`.
 
+### Different registries per environment
+
+When the source is a known environment (a key of the environment map) and its `CONTAINER_REGISTRY_ENDPOINT` differs from the target environment's, the image cannot simply be re-tagged. Instead, a job running in the **source** environment exports the image (all platforms) with its own registry credentials, and the promote job pushes it into the target registry with the target tag. This requires `skopeo` on the runner (available on GitHub-hosted Ubuntu runners).
+
+Note that this runs jobs in the source environment, so its protection rules (required reviewers, deployment branches) also apply to the promotion.
+
 ### K8S Cluster Rollout
 
 A rollout on a cluster in the given namespace. If kubernetes labels are provided, the list of deployments will **not** be used.

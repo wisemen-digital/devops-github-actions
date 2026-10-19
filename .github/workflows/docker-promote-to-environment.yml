@@ -94,7 +94,9 @@ jobs:
     environment: ${{ inputs.environment-target }}
     outputs:
       source: ${{ steps.gen-source.outputs.source }}
+      source-is-environment: ${{ steps.gen-source.outputs.source_is_environment }}
       target: ${{ steps.gen-source.outputs.target }}
+      target-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT || 'docker.io' }}
       variants: ${{ steps.gen-matrix.outputs.variants }}
     steps:
       - name: Validate & generate docker workflow inputs
@@ -125,19 +127,25 @@ jobs:
         run: |
           target=`echo ${{ inputs.environment-target }} | tr '[:upper:]' '[:lower:]'`
           echo "target=$target" >> "$GITHUB_OUTPUT"
+          env_map='${{ inputs.environment-map || env.default-tag-map }}'
 
           if [ ! -z "${{ inputs.environment-source }}" ]; then
-            echo "source=${{ inputs.environment-source }}" >> "$GITHUB_OUTPUT"
+            source="${{ inputs.environment-source }}"
           else
-            env_map='${{ inputs.environment-map || env.default-tag-map }}'
             source=`echo $env_map | jq -r ".$target"`
 
-            if [ "$source" != "null" ]; then
-              echo "source=$source" >> "$GITHUB_OUTPUT"
-            else
+            if [ "$source" == "null" ]; then
               echo "Unable to calculate source for ${{ inputs.environment-target }}." >> $GITHUB_STEP_SUMMARY
               exit 1
             fi
+          fi
+          echo "source=$source" >> "$GITHUB_OUTPUT"
+
+          # Only known environments (keys of the map) can hold a different registry
+          if echo $env_map | jq -e --arg source "$source" 'has($source)' > /dev/null; then
+            echo "source_is_environment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "source_is_environment=false" >> "$GITHUB_OUTPUT"
           fi
         env:
           default-tag-map: > # Note that this is a JSON string
@@ -148,10 +156,77 @@ jobs:
               "production": "staging"
             }
 
+  resolve-source:
+    name: Resolve source registry
+    needs: [validate-and-generate]
+    if: ${{ needs.validate-and-generate.outputs.source-is-environment == 'true' && needs.validate-and-generate.outputs.source != needs.validate-and-generate.outputs.target }}
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    environment: ${{ needs.validate-and-generate.outputs.source }}
+    outputs:
+      cross-registry: ${{ steps.registry.outputs.cross_registry }}
+    steps:
+      - name: Compare registries
+        id: registry
+        run: |
+          if [ "${source_registry}" != "${target_registry}" ]; then
+            echo "cross_registry=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cross_registry=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          source_registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT || 'docker.io' }}
+          target_registry: ${{ needs.validate-and-generate.outputs.target-registry }}
+
+  export-source-image:
+    name: Export ${{ matrix.variant.path }} from ${{ needs.validate-and-generate.outputs.source }}
+    needs: [validate-and-generate, resolve-source]
+    if: ${{ needs.resolve-source.outputs.cross-registry == 'true' && needs.validate-and-generate.outputs.variants != '[]' }}
+    strategy:
+      matrix:
+        variant: ${{ fromJson(needs.validate-and-generate.outputs.variants) }}
+    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
+    environment: ${{ needs.validate-and-generate.outputs.source }}
+    steps:
+      - name: Setup Docker environment
+        id: setup
+        uses: wisemen-digital/devops-github-actions/.github/actions/docker/setup@v1
+        with:
+          vendor: ${{ inputs.vendor }}
+          container-registry: ${{ vars.CONTAINER_REGISTRY_ENDPOINT }}
+          image: ${{ inputs.image }}
+          variant-path: ${{ matrix.variant.path }}
+          # Vendor: azure
+          azure-user: ${{ secrets.AZURE_CR_USER }}
+          azure-token: ${{ secrets.AZURE_CR_TOKEN }}
+          # Vendor: digitalocean
+          digitalocean-user: ${{ secrets.DIGITALOCEAN_API_USER }}
+          digitalocean-token: ${{ secrets.DIGITALOCEAN_API_TOKEN }}
+          # Vendor: scaleway
+          scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+      - name: Export image
+        shell: bash
+        run: |
+          if ! command -v skopeo > /dev/null; then
+            echo "::error title=MISSING TOOL::skopeo is required to promote between different registries."
+            exit 1
+          fi
+          skopeo copy --all "docker://${image_ref}:${source_tag}" "oci:${RUNNER_TEMP}/promote-image:${source_tag}"
+        env:
+          image_ref: ${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}
+          source_tag: ${{ needs.validate-and-generate.outputs.source }}
+      - name: Upload image
+        uses: actions/upload-artifact@v7
+        with:
+          name: promote-image-${{ steps.setup.outputs.image }}
+          path: ${{ runner.temp }}/promote-image
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+
   promote-tag:
     name: Promote ${{ matrix.variant.path }} to ${{ inputs.environment-target }}
-    needs: [validate-and-generate]
-    if: ${{ needs.validate-and-generate.outputs.variants != '[]' }}
+    needs: [validate-and-generate, resolve-source, export-source-image]
+    if: ${{ !failure() && !cancelled() && needs.validate-and-generate.outputs.variants != '[]' }}
     strategy:
       matrix:
         variant: ${{ fromJson(needs.validate-and-generate.outputs.variants) }}
@@ -177,7 +252,27 @@ jobs:
           # Vendor: scaleway
           scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
       # Re-tag
+      - name: Download source image
+        if: ${{ needs.resolve-source.outputs.cross-registry == 'true' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: promote-image-${{ steps.setup.outputs.image }}
+          path: ${{ runner.temp }}/promote-image
+      - name: Push source image to target registry
+        if: ${{ needs.resolve-source.outputs.cross-registry == 'true' }}
+        shell: bash
+        run: |
+          if ! command -v skopeo > /dev/null; then
+            echo "::error title=MISSING TOOL::skopeo is required to promote between different registries."
+            exit 1
+          fi
+          skopeo copy --all "oci:${RUNNER_TEMP}/promote-image:${source_tag}" "docker://${image_ref}:${target_tag}"
+        env:
+          image_ref: ${{ steps.setup.outputs.registry }}/${{ steps.setup.outputs.image }}
+          source_tag: ${{ needs.validate-and-generate.outputs.source }}
+          target_tag: ${{ needs.validate-and-generate.outputs.target }}
       - name: Re-tag image
+        if: ${{ needs.resolve-source.outputs.cross-registry != 'true' }}
         shell: bash
         run: docker buildx imagetools create "${image_ref}:${source_tag}" --tag "${image_ref}:${target_tag}"
         env:
