@@ -20,10 +20,6 @@ on:
         description: Time (in minutes) after wich the linter job will timeout
         default: 5
         type: number
-      linter:
-        description: Linter in use; disables ESLint cache arguments when set to oxlint
-        default: eslint
-        type: string
       node-runtime:
         description: Node Runtime (such as `node@24`)
         default: 'node@lts'
@@ -177,6 +173,7 @@ jobs:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           node-runtime: ${{ inputs.node-runtime }}
       - name: Restore ESLint cache
+        if: ${{ hashFiles('turbo.json') == '' }}
         uses: actions/cache@v6
         with:
           path: apps/*/.eslintcache
@@ -205,19 +202,12 @@ jobs:
             echo "TURBO_TOKEN=$TURBO_TOKEN"
           } >> "$GITHUB_ENV"
       - name: Lint
-        env:
-          LINTER: ${{ inputs.linter }}
         run: |
-          CACHE_ARGS="--cache --cache-location .eslintcache --cache-strategy content"
-          if [ "$LINTER" = "oxlint" ]; then
-            CACHE_ARGS=""
-          fi
-
           if test -f 'turbo.json'; then
             pnpm lint \
-              ${{ steps.setup.outputs.pnpm-filter-args }} \
-              -- $CACHE_ARGS
+              ${{ steps.setup.outputs.pnpm-filter-args }}
           else
+            CACHE_ARGS="--cache --cache-location .eslintcache --cache-strategy content"
             pnpm --recursive ${{ steps.setup.outputs.pnpm-filter-args }} lint \
               $CACHE_ARGS
           fi
