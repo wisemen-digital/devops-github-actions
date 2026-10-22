@@ -28,7 +28,7 @@ jobs:
         uses: pnpm/setup@v2
         with:
           cache: true
-        install: false
+          install: false
           runtime: ${{ inputs.node-runtime }}
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline --no-runtime
