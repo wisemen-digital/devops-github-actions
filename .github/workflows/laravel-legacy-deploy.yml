@@ -23,6 +23,11 @@ on:
         default: '8.3'
         required: true
         type: string
+      run-migrations:
+        description: Run `artisan migrate` on deploy. Disable for projects without a database.
+        default: true
+        required: false
+        type: boolean
     secrets:
       COMPOSER_AUTH:
         description: JSON for access to private packages
@@ -178,6 +183,7 @@ jobs:
             php artisan storage:link
           EOF
       - name: Migrate database
+        if: inputs.run-migrations
         run: ssh ${{ vars.DEPLOY_URL }} "php www/htdocs/artisan migrate --force"
       - name: Clear permissions cache
         continue-on-error: true
