@@ -68,7 +68,7 @@ jobs:
           COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
       # Build (front-end)
       - name: Install pnpm
-        uses: pnpm/setup@v2
+        uses: pnpm/setup@v3
         if: hashFiles('pnpm-lock.yaml') != ''
         with:
           cache: true

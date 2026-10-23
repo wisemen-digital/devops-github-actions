@@ -67,7 +67,7 @@ jobs:
         with:
           ref: ${{ env.git-ref }}
       - name: Install pnpm
-        uses: pnpm/setup@v2
+        uses: pnpm/setup@v3
         with:
           cache: true
           install: false
@@ -88,7 +88,7 @@ jobs:
         with:
           ref: ${{ env.git-ref }}
       - name: Install pnpm
-        uses: pnpm/setup@v2
+        uses: pnpm/setup@v3
         with:
           cache: true
           install: false
