@@ -87,4 +87,51 @@ runs:
         git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
     - name: Apply config
       shell: bash
-      run: kubectl apply -k ${{ inputs.config-path }}
+      env:
+        VENDOR: ${{ inputs.vendor }}
+        CLUSTER_ID: ${{ inputs.cluster-id }}
+        AZURE_RESOURCE_GROUP: ${{ inputs.azure-resource-group }}
+        CONFIG_PATH: ${{ inputs.config-path }}
+      run: |
+        # Azure clusters are private: their API server only resolves inside the
+        # VNet, so kubectl cannot reach them from a hosted runner. Tunnel the
+        # command through the Azure control plane instead.
+        run_cmd() {
+          if [ "$VENDOR" != "azure" ]; then
+            eval "$*"
+            return
+          fi
+
+          local result
+          result=`az aks command invoke \
+            --name "$CLUSTER_ID" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --file "$manifest_file" \
+            --command "$*" \
+            --output json`
+
+          jq -r '.logs // ""' <<< "$result"
+
+          # `az aks command invoke` exits 0 even when the remote command failed,
+          # so the remote exit code has to be checked explicitly.
+          local state
+          local code
+          state=`jq -r '.provisioningState // ""' <<< "$result"`
+          code=`jq -r '.exitCode // 1' <<< "$result"`
+
+          if [ "$state" != "Succeeded" ]; then
+            echo "::error::Run command did not complete (state: $state): $*" >&2
+            return 1
+          fi
+          if [ "$code" != "0" ]; then
+            echo "::error::Command failed on cluster with exit code $code: $*" >&2
+            return "$code"
+          fi
+        }
+
+        # Pre-render kustomize so the manifest can be sent to the cluster
+        manifest_file=`mktemp --tmpdir=. --suffix .yaml`
+        kubectl kustomize "$CONFIG_PATH" > "$manifest_file"
+
+        # Apply k8s config
+        run_cmd kubectl apply -f "$manifest_file"
