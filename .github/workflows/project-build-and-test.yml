@@ -249,7 +249,7 @@ jobs:
     if: ${{ needs.generate-matrix.outputs.apps != '[]' }}
     runs-on: ${{ vars.RUNNER_TEST || 'ubuntu-latest' }}
     container: ${{ matrix.app.container }}
-    services: ${{ matrix.app.services }}
+    services: ${{ matrix.app.services || fromJson('{}') }}
     timeout-minutes: ${{ inputs.test-timeout }}
     steps:
       - name: Setup Node environment
