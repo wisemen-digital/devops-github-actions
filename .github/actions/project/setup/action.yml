@@ -22,28 +22,6 @@ outputs:
 runs:
   using: composite
   steps:
-    # Calculate values
-    - name: Calculate values
-      shell: bash
-      id: values
-      run: |
-        changed_apps=`echo '${{ inputs.apps }}' | jq -r '.[]? | select(.skip != true) | .path'`
-
-        FILTER_ARGS=()
-        INSTALL_FILTER_ARGS=(--filter .)
-        while IFS= read -r item; do
-          [[ -n "$item" ]] || continue
-          FILTER_ARGS+=(--filter "${item}")
-          INSTALL_FILTER_ARGS+=(--filter "${item}...")
-        done <<< "$changed_apps"
-
-        # Apps given but all skipped: commands run unfiltered, so install everything
-        if [[ ${#FILTER_ARGS[@]} -eq 0 && '${{ inputs.apps }}' != '' && '${{ inputs.apps }}' != '[]' ]]; then
-          INSTALL_FILTER_ARGS=()
-        fi
-
-        echo "pnpm_filter_args=${FILTER_ARGS[@]}" >> "$GITHUB_OUTPUT"
-        echo "pnpm_install_filter_args=${INSTALL_FILTER_ARGS[@]}" >> "$GITHUB_OUTPUT"
     # Disable telemetry
     - name: Disable Turbo telemetry
       shell: bash
@@ -60,6 +38,30 @@ runs:
         cache: true
         install: false
         runtime: ${{ inputs.node-runtime }}
+    # Calculate values (using node, `jq` isn't available in every container)
+    - name: Calculate values
+      shell: bash
+      id: values
+      env:
+        APPS: ${{ inputs.apps }}
+      run: |
+        node <<'EOF'
+        const fs = require('node:fs')
+
+        const apps = JSON.parse(process.env.APPS || '[]')
+        const changedApps = apps.filter((app) => app.skip !== true).map((app) => app.path)
+
+        const filterArgs = changedApps.flatMap((app) => ['--filter', app])
+        // Apps given but all skipped: commands run unfiltered, so install everything
+        const installFilterArgs = changedApps.length === 0 && apps.length > 0
+          ? []
+          : ['--filter', '.', ...changedApps.flatMap((app) => ['--filter', `${app}...`])]
+
+        fs.appendFileSync(process.env.GITHUB_OUTPUT, [
+          `pnpm_filter_args=${filterArgs.join(' ')}`,
+          `pnpm_install_filter_args=${installFilterArgs.join(' ')}`,
+        ].join('\n') + '\n')
+        EOF
     - name: Install dependencies
       shell: bash
       env:
