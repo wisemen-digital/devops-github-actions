@@ -34,7 +34,7 @@ runs:
         while IFS= read -r item; do
           [[ -n "$item" ]] || continue
           FILTER_ARGS+=(--filter "${item}")
-          INSTALL_FILTER_ARGS+=(--filter "{./${item}}...")
+          INSTALL_FILTER_ARGS+=(--filter "${item}...")
         done <<< "$changed_apps"
 
         # Apps given but all skipped: commands run unfiltered, so install everything

@@ -45,8 +45,8 @@ jq -cn '
 
   # Process all (add skip property, only keep missing)
   (
-    # Add skip properties and enrich with config data
-    $all[0] | map(. + {skip: true} + ($config[0][.stack] // {}))
+    # Add skip properties, without config data (so no container/services are started)
+    $all[0] | map(. + {skip: true})
     # Only keep items not present in "changes"
     | map(
       .path as $path |
