@@ -129,7 +129,7 @@ jobs:
     steps:
       - name: Setup Node environment
         id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@feature/filter-installed-packages
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           filtered-install: ${{ inputs.filtered-install }}
@@ -146,7 +146,7 @@ jobs:
     steps:
       - name: Validate & generate docker workflow inputs
         id: gen-matrix
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/generate-matrix@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/generate-matrix@feature/filter-installed-packages
         with:
           mailpit-enabled: ${{ inputs.test-mailpit-enabled }}
           mailpit-image: ${{ inputs.test-mailpit-image }}
@@ -173,7 +173,7 @@ jobs:
     steps:
       - name: Setup Node environment
         id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@feature/filter-installed-packages
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           filtered-install: ${{ inputs.filtered-install }}
@@ -225,7 +225,7 @@ jobs:
     steps:
       - name: Setup Node environment
         id: setup
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@feature/filter-installed-packages
         with:
           apps: ${{ needs.generate-matrix.outputs.apps }}
           filtered-install: ${{ inputs.filtered-install }}
@@ -254,7 +254,7 @@ jobs:
     steps:
       - name: Setup Node environment
         if: ${{ matrix.app.skip != true }}
-        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@feature/filter-installed-packages
         with:
           apps: '[${{ toJson(matrix.app) }}]'
           filtered-install: ${{ inputs.filtered-install }}
