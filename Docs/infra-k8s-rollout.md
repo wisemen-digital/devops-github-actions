@@ -10,6 +10,8 @@ Using either list, it will trigger a rollout to the specified cluster using the 
 
 Configuration is applied with server-side apply (`kubectl apply --server-side --force-conflicts -k <folder>`), so large CRDs such as External Secrets Operator's can be applied.
 
+> **Autoscaled workloads:** server-side apply re-asserts every field in the manifest on each rollout, including `replicas`. For a Deployment managed by an HPA or KEDA, a `replicas` value in git resets the replica count on every rollout until the autoscaler corrects it. Leave `replicas` out of git for autoscaled workloads.
+
 ## Inputs
 
 ### Common Inputs
