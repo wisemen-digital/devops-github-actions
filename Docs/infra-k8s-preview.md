@@ -4,8 +4,6 @@
 
 This workflow will generate a preview of the k8s structure changes.
 
-Values under `data`, `stringData` and `binaryData` of ConfigMaps and Secrets are replaced by `<redacted:xxxxxxxx>` (a hash keyed with a random per-run key) before diffing, so a changed value still shows up in the diff without exposing it. This requires [yq v4](https://github.com/mikefarah/yq) on the runner; without it, the preview is withheld.
-
 ## Inputs
 
 ### Common Inputs

@@ -43,55 +43,12 @@ jobs:
             exit 0
           fi
 
-          # Rendered manifests can contain secrets (ConfigMap/Secret data), and the diff ends up in
-          # the PR comment and in this job's log. Redact those values before diffing. Each value is
-          # replaced by a keyed hash (random key per run, shared by old & new) so a changed value
-          # still shows up in the diff without being guessable. Fail closed if redaction isn't possible.
-          if ! yq --version 2>/dev/null | grep -q 'mikefarah/yq.* v4\.'; then
-            echo "::warning::yq v4 (mikefarah) not found on this runner; k8s preview withheld to avoid leaking secrets."
-            {
-              echo 'contents<<EOF'
-              echo '_Preview withheld: yq v4 is not available on the runner, so secrets could not be redacted._'
-              echo 'EOF'
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          REDACT_KEY=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
-          REDACT_VALUES='select(.kind == "ConfigMap" or .kind == "Secret") | .[]
-            | select(key == "data" or key == "stringData" or key == "binaryData")
-            | select(tag == "!!map") | .[]'
-          redact_manifests() {
-            local file="$1" token hash script="$RUNNER_TEMP/k8s-preview-redact.sed"
-            [ -s "$file" ] || return 0
-            # 1. Replace each value by a placeholder holding its base64 encoding
-            yq -i "($REDACT_VALUES) |= (\"@@REDACT:\" + (tostring | @base64) + \"@@\")" "$file"
-            # 2. Fail closed if any value is left unredacted
-            if [ -n "$(yq -N "$REDACT_VALUES | select(test(\"^@@REDACT:[A-Za-z0-9+/=]*@@\$\") | not)" "$file")" ]; then
-              echo "::error::Could not redact ConfigMap/Secret data in $file"
-              return 1
-            fi
-            # 3. Swap placeholders for the keyed hash
-            : > "$script"
-            while IFS= read -r token; do
-              hash=$({ printf '%s' "$REDACT_KEY"; printf '%s' "$token"; } | sha256sum | cut -c1-8)
-              echo "s|@@REDACT:${token}@@|<redacted:${hash}>|g" >> "$script"
-            done < <(yq -N "$REDACT_VALUES" "$file" | sed -n 's/^@@REDACT:\([A-Za-z0-9+/=]*\)@@$/\1/p' | sort -u)
-            sed -i -f "$script" "$file"
-            rm -f "$script"
-            # Placeholders are reversible (base64), so none may survive
-            if grep -q '@@REDACT:' "$file"; then
-              echo "::error::Could not redact ConfigMap/Secret data in $file"
-              return 1
-            fi
-          }
-
           # Generate new content
           while IFS= read -r path; do
             echo "Processing new $path…"
             mkdir -p `dirname diff-new/$path`
             if [ -e "$path" ]; then
               kubectl kustomize "$path" > "diff-new/$path"
-              redact_manifests "diff-new/$path"
             else
               touch "diff-new/$path"
             fi
@@ -109,7 +66,6 @@ jobs:
             mkdir -p `dirname diff-old/$path`
             if [ -e "$path" ]; then
               kubectl kustomize "$path" > "diff-old/$path"
-              redact_manifests "diff-old/$path"
             else
               touch "diff-old/$path"
             fi
