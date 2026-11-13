@@ -85,6 +85,12 @@ jobs:
     if: ${{ needs.generate-matrix.outputs.deployments != '[]' }}
     runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
     environment: ${{ matrix.deployment.environment }}
+    # Never run two applies of the same deployment at once (queued, not cancelled). The group
+    # includes the path: a per-environment group would cancel sibling matrix jobs, because
+    # GitHub only keeps one pending job per concurrency group.
+    concurrency:
+      group: s3-${{ github.repository }}-${{ matrix.deployment.environment }}-${{ matrix.deployment.path }}
+      cancel-in-progress: false
     steps:
       - name: Prepare environment
         run: |

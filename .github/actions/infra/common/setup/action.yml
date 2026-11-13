@@ -90,6 +90,12 @@ runs:
         token: ${{ inputs.digitalocean-api-token }}
 
     # Vendor: Scaleway
+    # Keep the scw config job-scoped: never write credentials to $HOME, which survives the job on
+    # reused runners. The CLI gets its credentials from the exported SCW_* env vars instead.
+    - name: Scope scw config to this job
+      if: ${{ inputs.vendor == 'scaleway' }}
+      shell: bash
+      run: echo "SCW_CONFIG_PATH=$RUNNER_TEMP/scw/config.yaml" >> "$GITHUB_ENV"
     - name: Install scw tool
       if: ${{ inputs.vendor == 'scaleway' }}
       uses: scaleway/action-scw@v0
@@ -99,4 +105,4 @@ runs:
         default-organization-id: ${{ inputs.scaleway-organization-id }}
         default-project-id: ${{ inputs.scaleway-project-id }}
         export-config: true
-        save-config: true
+        save-config: false

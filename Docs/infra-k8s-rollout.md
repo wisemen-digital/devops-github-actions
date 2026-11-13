@@ -8,6 +8,8 @@ This workflow will either:
 
 Using either list, it will trigger a rollout to the specified cluster using the configuration stored in that folder.
 
+Rollouts of the same repository, environment and folder never run in parallel: they are queued (`cancel-in-progress: false`). The kubeconfig and Scaleway CLI config only live in `$RUNNER_TEMP` for the duration of the job.
+
 ## Inputs
 
 ### Common Inputs

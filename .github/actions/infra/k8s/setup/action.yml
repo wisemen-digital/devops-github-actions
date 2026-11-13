@@ -69,6 +69,13 @@ runs:
             ;;
         esac
 
+    # Keep the kubeconfig job-scoped ($RUNNER_TEMP is wiped after every job), instead of
+    # ~/.kube/config which survives the job on reused runners. With SCW_SECRET_KEY set, scw writes
+    # the API secret key into the kubeconfig as a bearer token.
+    - name: Scope kubeconfig to this job
+      shell: bash
+      run: echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
+
     # Vendor common setup
     - uses: wisemen-digital/devops-github-actions/.github/actions/infra/common/setup@v1
       with:
