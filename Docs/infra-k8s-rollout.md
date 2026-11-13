@@ -8,6 +8,8 @@ This workflow will either:
 
 Using either list, it will trigger a rollout to the specified cluster using the configuration stored in that folder.
 
+Configuration is applied with server-side apply (`kubectl apply --server-side --force-conflicts -k <folder>`), so large CRDs such as External Secrets Operator's can be applied.
+
 ## Inputs
 
 ### Common Inputs

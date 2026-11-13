@@ -85,6 +85,9 @@ runs:
       run: |
         AUTH="x-access-token:${{ inputs.github-access-token }}"
         git config --global url."https://${AUTH}@github.com/".insteadOf "git@github.com:"
+    # Server-side apply: client-side apply stores the whole object in an annotation capped at
+    # 256 KiB, which large CRDs (e.g. External Secrets Operator) exceed. --force-conflicts keeps
+    # the pipeline the owner of every field its manifests set, as with client-side apply.
     - name: Apply config
       shell: bash
-      run: kubectl apply -k ${{ inputs.config-path }}
+      run: kubectl apply --server-side --force-conflicts -k ${{ inputs.config-path }}
