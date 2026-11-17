@@ -71,16 +71,37 @@ jobs:
             fi
           done <<< "$changed_paths"
 
-          # Generate diffs
+          # Generate diffs. A PR comment holds at most 65536 characters and step outputs have a
+          # size limit too, so large diffs (e.g. installing an operator with big CRDs) are
+          # summarised in the comment and printed in full in this job's log instead.
           echo "Generating diffs…"
+          max_path_bytes=20000
+          max_total_bytes=60000
+          total=0
+          : > comment.md
+          while IFS= read -r path; do
+            diff -u "diff-old/$path" "diff-new/$path" > path.diff || true
+            size=$(wc -c < path.diff | tr -d " ")
+            echo "<details><summary>$path</summary>" >> comment.md
+            if [ "$size" -gt "$max_path_bytes" ] || [ $((total + size)) -gt "$max_total_bytes" ]; then
+              added=$(grep -c '^+[^+]' path.diff || true)
+              removed=$(grep -c '^-[^-]' path.diff || true)
+              kinds=$(grep -E '^[+-]kind: ' path.diff | sort | uniq -c | awk '{printf "%s%s ×%s, ", substr($2, 1, 1), $3, $1}' | sed 's/, $//')
+              echo -e "\nDiff too large for a comment ($size bytes: +$added/-$removed lines). Objects: ${kinds:-none}. Full diff in the job log.\n" >> comment.md
+              echo "::group::Full diff for $path"
+              cat path.diff
+              echo "::endgroup::"
+            else
+              echo -e '\n```diff' >> comment.md
+              cat path.diff >> comment.md
+              echo -e '```\n' >> comment.md
+              total=$((total + size))
+            fi
+            echo "</details>" >> comment.md
+          done <<< "$changed_paths"
           {
             echo 'contents<<EOF'
-            while IFS= read -r path; do
-              echo "<details><summary>$path</summary>"
-              echo -e '\n```diff'
-              diff -u "diff-old/$path" "diff-new/$path" || true
-              echo -e '```\n</details>'
-            done <<< "$changed_paths"
+            cat comment.md
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
         env:
