@@ -35,14 +35,40 @@ jobs:
     name: Lint Application
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     timeout-minutes: 5
+    container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Lint
-        uses: aglipanci/laravel-pint-action@latest
+      - name: Prepare .env (needed for some old projects)
+        run: cp -f .env.example .env
+      # Dependencies
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v6
         with:
-          testMode: true
-          useComposer: true
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+        env:
+          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
+      # Lint code
+      - name: Lint
+        run: |
+          vendor/bin/pint \
+            --test \
+            --output-to-file=app-lint-reports-junit.xml \
+            --output-format=junit
+        continue-on-error: true
+      - name: Store Lint Reports
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-lint-reports
+          path: app-lint-reports-junit.xml
+          retention-days: 7
   build:
     name: Build Application
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
@@ -156,11 +182,34 @@ jobs:
           cp -f .env .env.testing
           php artisan config:cache
           php artisan migrate --seed
-      - name: Run tests
-        run: vendor/bin/pest --log-junit="test-reports-junit.xml"
+      - name: Run Tests
+        run: vendor/bin/pest --log-junit="app-test-reports-junit.xml"
+      - name: Store Test Reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-test-reports
+          path: app-test-reports-junit.xml
+          retention-days: 7
+
+  # Finally publish test report (summary)
+  publish-test-report:
+    name: Publish Test Application
+    needs: [lint, test]
+    if: always()
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    steps:
+      - name: Download archive
+        uses: actions/download-artifact@v8
+        with:
+          pattern: 'app-*-reports'
+          merge-multiple: true
       - name: Publish test report
         uses: mikepenz/action-junit-report@v6
-        if: always()  # always run even if the previous step fails
         with:
-          report_paths: test-reports-junit.xml
-          require_tests: true
+          check_name: Test Report
+          group_reports: false
+          include_empty_in_summary: false
+          report_paths: '**/app-*-reports-junit.xml'
+          require_passed_tests: false
+          simplified_summary: true
