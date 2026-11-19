@@ -42,7 +42,7 @@ on:
 jobs:
   build:
     name: Build Application
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     steps:
       - name: Checkout
@@ -116,7 +116,7 @@ jobs:
   deploy:
     name: Deploy build to ${{ inputs.environment }}
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_INFRA || 'ubuntu-latest' }}
     environment: ${{ inputs.environment }}
     steps:
       - name: Setup SSH

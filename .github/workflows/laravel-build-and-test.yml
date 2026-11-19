@@ -33,7 +33,7 @@ on:
 jobs:
   lint:
     name: Lint Application
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -45,7 +45,7 @@ jobs:
           useComposer: true
   build:
     name: Build Application
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
     timeout-minutes: 5
     container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     steps:
@@ -114,7 +114,7 @@ jobs:
   test:
     name: Test Application
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_TEST || 'ubuntu-latest' }}
     timeout-minutes: ${{ inputs.test-timeout }}
     container: lorisleiva/laravel-docker:${{ inputs.php-version }}
     env:
