@@ -32,6 +32,10 @@ on:
         description: Time (in minutes) after wich the test job will timeout
         default: 5
         type: number
+      test-playwright-enabled:
+        description: Run Playwright E2E tests for Vue projects
+        default: false
+        type: boolean
       # Test services configuration
       test-mssql-enabled:
         description: Enable MSSQL test service (defaults to false)
@@ -292,6 +296,12 @@ jobs:
           app: ${{ matrix.app.path }}
           pnpm-filter-args: '--filter ${{ matrix.app.path }}'
           stack: ${{ matrix.app.stack }}
+      - name: Run Playwright tests
+        if: ${{ matrix.app.skip != true && inputs.test-playwright-enabled && matrix.app.stack == 'vue' }}
+        uses: wisemen-digital/devops-github-actions/.github/actions/project/test-stack@v1
+        with:
+          app: ${{ matrix.app.path }}
+          stack: playwright
       - name: Store test reports
         if: ${{ always() && matrix.app.skip != true }}
         uses: actions/upload-artifact@v7

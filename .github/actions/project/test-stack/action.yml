@@ -25,8 +25,14 @@ runs:
         # Note: we're using '$GITHUB_ACTION_PATH' instead of github.action_path because of a bug in GA
         # Refs: https://github.com/actions/runner/issues/2185
 
-        if [ -f "$GITHUB_ACTION_PATH/scripts/${{ inputs.stack }}.sh" ]; then
-          "$GITHUB_ACTION_PATH/scripts/${{ inputs.stack }}.sh"
+        if [ "${{ inputs.stack }}" = "playwright" ]; then
+          SCRIPT_PATH="$GITHUB_ACTION_PATH/scripts/playwright.sh"
+        else
+          SCRIPT_PATH="$GITHUB_ACTION_PATH/scripts/${{ inputs.stack }}.sh"
+        fi
+
+        if [ -f "$SCRIPT_PATH" ]; then
+          "$SCRIPT_PATH"
         else
           echo "::error Unknown stack ${{ inputs.stack }}"
           exit 1

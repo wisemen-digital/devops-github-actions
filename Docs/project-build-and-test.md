@@ -40,7 +40,29 @@ Note that the tests are run depending on the stack:
 - NestJS: native Node test runner, invokes `test:setup` and `test:run` package commands.
 - Nuxt: uses `nuxi prepare` and then `vitest`.
 - Payload: uses `vitest` for unit tests.
-- Vue.js: uses `vitest` for unit tests, and playwright for E2E tests.
+- Vue.js: uses `vitest` for unit tests. Playwright E2E tests can run separately through `project-playwright.yml`.
+
+Set `test-playwright-enabled` to `true` to include Playwright E2E tests in this workflow.
+
+### Nightly Playwright tests
+
+Call [`project-playwright.yml`](../.github/workflows/project-playwright.yml) from a scheduled workflow in the consuming repository:
+
+```yaml
+name: Nightly Playwright
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  playwright:
+    uses: wisemen-digital/devops-github-actions/.github/workflows/project-playwright.yml@v1
+    with:
+      app: web
+```
+
+The `app` input is the app directory under `apps/`. The reusable workflow runs the app build and Playwright E2E tests.
 
 ## Inputs
 
@@ -50,6 +72,7 @@ Note that the tests are run depending on the stack:
 | `node-runtime` | Node runtime to use, defaults to `node@lts` |
 | `turbo-cache-enabled` | Enable Turbo remote cache; requires `TURBO_TOKEN` unless set to `false` (defaults to `true`) |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
+| `test-playwright-enabled` | Whether to run Vue Playwright E2E tests in this flow (defaults to `false`) |
 | `test-mssql-enabled` | Whether or not to create the MS SQL service (defaults to `false`) |
 | `test-mssql-image` | MS SQL image to use for the tests, defaults to `mcr.microsoft.com/mssql/server:2022-latest` |
 | `test-mysql-enabled` | Whether or not to create the MySQL service (defaults to `false`) |

@@ -29,25 +29,3 @@ start_log_group "Run Vue Unit tests"
   fi
 )
 stop_log_group
-
-# Run E2E Tests
-
-if test -f 'playwright.config.ts'; then
-  start_log_group "Run Vue E2E tests"
-  (
-    sed -i -e 's/ENVIRONMENT=.*/ENVIRONMENT=ci-test-e2e/g' '.env'
-
-    JUNIT_REPORT_FILE=${APP}-e2e-test-report-junit.xml
-    TEST_REPORTER_OPTIONS=()
-    if_not_debug && TEST_REPORTER_OPTIONS+=(
-      --reporter=junit
-    )
-    export PLAYWRIGHT_JUNIT_OUTPUT_NAME="$JUNIT_REPORT_FILE"
-    export PLAYWRIGHT_JUNIT_SUITE_NAME="${APP} E2E Tests"
-
-    pnpm exec playwright test "${TEST_REPORTER_OPTIONS[@]}"
-  )
-  stop_log_group
-else
-  echo "Skipping Playwright tests, not configured."
-fi
