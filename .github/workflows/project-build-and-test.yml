@@ -32,6 +32,10 @@ on:
         description: Time (in minutes) after wich the test job will timeout
         default: 5
         type: number
+      type-check-timeout:
+        description: Time (in minutes) after which the type check job will timeout
+        default: 5
+        type: number
       # Test services configuration
       test-mssql-enabled:
         description: Enable MSSQL test service (defaults to false)
@@ -215,7 +219,7 @@ jobs:
     name: Type Check Application
     needs: [generate-matrix]
     runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
-    timeout-minutes: 5
+    timeout-minutes: ${{ inputs.type-check-timeout }}
     steps:
       - name: Setup Node environment
         id: setup
