@@ -10,6 +10,10 @@ inputs:
     description: Node Runtime (such as `node@24`)
     required: false
     default: 'node@lts'
+  install-app:
+    description: Limit installation to the workspace root and this app under apps/ with its dependencies
+    required: false
+    default: ''
 outputs:
   pnpm-filter-args:
     description: Arguments for a `pnpm` command to only trigger for the given apps
@@ -51,4 +55,16 @@ runs:
         runtime: ${{ inputs.node-runtime }}
     - name: Install dependencies
       shell: bash
-      run: pnpm install --frozen-lockfile --prefer-offline --no-runtime
+      env:
+        INSTALL_APP: ${{ inputs.install-app }}
+      run: |
+        filters=()
+        if [[ -n "$INSTALL_APP" ]]; then
+          if [[ ! -f "apps/$INSTALL_APP/package.json" ]]; then
+            echo "Missing package.json for apps/$INSTALL_APP" >&2
+            exit 1
+          fi
+          echo "Installing workspace tools and dependencies for apps/$INSTALL_APP"
+          filters=(--filter . --filter "{./apps/$INSTALL_APP}...")
+        fi
+        pnpm "${filters[@]}" install --frozen-lockfile --prefer-offline --no-runtime
