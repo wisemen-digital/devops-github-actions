@@ -42,6 +42,31 @@ Note that the tests are run depending on the stack:
 - Payload: uses `vitest` for unit tests.
 - Vue.js: uses `vitest` for unit tests, and playwright for E2E tests.
 
+## Shared pnpm cache
+
+To reuse dependencies across pull requests, call `project-warm-pnpm-cache.yml` on a trusted push to the default branch. It installs the workspace with the same setup action as the checks. Pass the same `node-runtime`. If tests run in a Playwright container, also pass the same `test-playwright-image` to warm its separate archive.
+
+```yaml
+on:
+  push:
+    branches: [main]
+    paths:
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - package.json
+      - .github/workflows/warm-pnpm-cache.yml
+  workflow_dispatch:
+
+jobs:
+  warm:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    uses: wisemen-digital/devops-github-actions/.github/workflows/project-warm-pnpm-cache.yml@v1
+    with:
+      node-runtime: node@24
+```
+
+Set `cache-mode: read` on the PR job that calls `project-build-and-test.yml`. This applies to all GitHub Actions caches in the called jobs. Checks still perform a frozen install and fetch any packages missing from the store. Use the manual dispatch to refill an evicted archive.
+
 ## Inputs
 
 | Input | Description |
