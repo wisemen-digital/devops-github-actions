@@ -42,6 +42,8 @@ Note that the tests are run depending on the stack:
 - Payload: uses `vitest` for unit tests.
 - Vue.js: uses `vitest` for unit tests, and playwright for E2E tests.
 
+Set `test-filtered-install: true` under the caller's `with` to install the workspace root, the app under test, and its transitive workspace dependencies in each app test job. This keeps root build tools available. Each app and shared package must declare the dependencies it uses, including packages imported from stylesheets. Lint and type-check jobs use the full workspace install.
+
 ## Shared pnpm cache
 
 To reuse dependencies across pull requests, call `project-warm-pnpm-cache.yml` on a trusted push to the default branch. It installs the workspace with the same setup action as the checks. Pass the same `node-runtime`. If tests run in a Playwright container, also pass the same `test-playwright-image` to warm its separate archive.
@@ -75,6 +77,7 @@ Set `cache-mode: read` on the PR job that calls `project-build-and-test.yml`. Th
 | `node-runtime` | Node runtime to use, defaults to `node@lts` |
 | `turbo-cache-enabled` | Enable Turbo remote cache; requires `TURBO_TOKEN` unless set to `false` (defaults to `true`) |
 | `test-timeout` | Time in minutes after wich the test job will timeout (defaults to `5`) |
+| `test-filtered-install` | Scope each app test job's pnpm install to the root, app and workspace dependencies (defaults to `false`) |
 | `test-mssql-enabled` | Whether or not to create the MS SQL service (defaults to `false`) |
 | `test-mssql-image` | MS SQL image to use for the tests, defaults to `mcr.microsoft.com/mssql/server:2022-latest` |
 | `test-mysql-enabled` | Whether or not to create the MySQL service (defaults to `false`) |
