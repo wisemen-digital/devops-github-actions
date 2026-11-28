@@ -1,0 +1,39 @@
+---
+name: Warm pnpm cache
+
+on:
+  workflow_call:
+    inputs:
+      node-runtime:
+        description: Node runtime used by the build and test workflow
+        default: 'node@lts'
+        type: string
+      test-playwright-image:
+        description: Also warm the cache inside this Playwright job container
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  host:
+    name: Warm host pnpm cache
+    runs-on: ${{ vars.RUNNER_DEFAULT || 'ubuntu-latest' }}
+    steps:
+      - uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        with:
+          apps: '[]'
+          node-runtime: ${{ inputs.node-runtime }}
+
+  playwright:
+    name: Warm Playwright pnpm cache
+    if: ${{ inputs.test-playwright-image != '' }}
+    runs-on: ${{ vars.RUNNER_TEST || 'ubuntu-latest' }}
+    container:
+      image: ${{ inputs.test-playwright-image }}
+      options: --user 1001
+    steps:
+      - uses: wisemen-digital/devops-github-actions/.github/actions/project/setup@v1
+        with:
+          apps: '[]'
+          node-runtime: ${{ inputs.node-runtime }}

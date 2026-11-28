@@ -19,6 +19,7 @@ Verification (PR check):
 | -------- | ----------- |
 | [laravel-build-and-test.yml](Docs/laravel-build-and-test.md) | Lint, build & test a Laravel app |
 | [project-build-and-test.yml](Docs/project-build-and-test.md) | Lint, build & test a monorepo (Node-based) |
+| [project-warm-pnpm-cache.yml](Docs/project-build-and-test.md#shared-pnpm-cache) | Warm pnpm dependency caches for pull requests |
 
 ## Infra Workflows
 
